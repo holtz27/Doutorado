@@ -41,7 +41,7 @@ model {
   phiT ~ beta( 20, 1.5 );
   s2_h ~ inv_gamma(2.5,0.025);
   // PC priori
-  target += - 0.5 * log(s2_a) - lambda * sqrt( s2_a );
+  target += - 0.5 * log( s2_a ) - lambda * sqrt( s2_a );
   
   // Verossimilhança
   h_std ~ std_normal();
