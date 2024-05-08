@@ -19,7 +19,9 @@ pcpriori = function(x, lambda){
   y = 0.5 * lambda * x**(-0.5) * exp( - lambda * sqrt( x ) )
   return( y )
 }
-lambda = 1.0
+a = 0.01
+U = 0.2
+lambda = -log( a ) / sqrt( U ) 
 
 x = seq(0, 1, by = 0.01)
 plot(x, 
