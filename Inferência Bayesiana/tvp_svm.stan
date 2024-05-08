@@ -37,9 +37,9 @@ transformed parameters{
 model {
   // Prioris
   tau ~ normal( 0, sqrt(10) );
-  mu ~ normal(0, sqrt(10) );
+  mu ~ normal( 0, sqrt(10) );
   phiT ~ beta( 20, 1.5 );
-  s2_h ~ inv_gamma(2.5,0.025);
+  s2_h ~ inv_gamma( 2.5, 0.025 );
   // PC priori
   target += - 0.5 * log( s2_a ) - lambda * sqrt( s2_a );
   
@@ -49,3 +49,4 @@ model {
   y ~ normal( mu_t, exp( 0.5 * h ) );
   
 }
+
