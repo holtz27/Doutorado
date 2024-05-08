@@ -1,11 +1,11 @@
 # Simulando dados
 tau = 0.1
-mu = 0.0
+mu = -5
 phi = 0.98
-s2_h = 0.05
-s2_a = 0.05
+s2_h = 0.25
+s2_a = 0.25
 
-T = 3e3
+T = 5e2
 
 set.seed( 8936381 )
 y = h = a = matrix(0, nrow = T, ncol = 1)
@@ -29,9 +29,9 @@ model_stan = rstan::stan_model(file = 'tvp_svm.stan')
 draws = rstan::sampling(model_stan, 
                         data = list(T = length( y ), 
                                     y = as.numeric( y ),
-                                    lambda = 1.0),
+                                    lambda = -log( 0.01 ) / sqrt( 0.2 ) ),
                         chains = 4,
-                        iter = 5e3
+                        iter = 5e2
                         )
 # Visualizar os resultados
 rstan::summary( draws )$summary[c('tau', 'mu', 'phi', 's2_h', 's2_a'), 
