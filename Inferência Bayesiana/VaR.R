@@ -1,4 +1,4 @@
-VaR = function( h_T, a_T, theta_hmc, p = 0.01, k ){
+VaR = function( h_T, a_T, theta_hmc, p = 0.95, k=1e3 ){
   
   theta = theta_hmc
   
@@ -10,8 +10,7 @@ VaR = function( h_T, a_T, theta_hmc, p = 0.01, k ){
   eps_a = rnorm( M, sd = sqrt(theta[5, ]) )
   a_new = a_T + eps_a
   
-  k = 1e3
-  y_new = matrix(0, nrow = k, ncol = M)
+  y_new = matrix( nrow = k, ncol = M)
   for(j in 1:k){
     eps_y = rnorm( M, sd = exp( 0.5 * h_new ) )
     y_new[j, ] = theta[1, ] + a_new * exp( h_new ) + eps_y 
