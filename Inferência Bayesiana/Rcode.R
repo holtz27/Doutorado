@@ -1,20 +1,23 @@
-library(ggplot2)
+library( ggplot2 )
+library( tseries )
 source( 'https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R' )
-
+source( 'https://raw.githubusercontent.com/holtz27/svmsmn/main/source/VaR.R' )
 # Compilando o modelo Stan
 model_stan = rstan::stan_model(file = 'tvp_svm.stan')
 
 # Simulando dados
 tau = 0.1
-mu = -9
+mu = -5
 phi = 0.985
-s2_h = 0.03
-s2_a = 0.005
+s2_h = 0.025
+s2_a = 0.05
 
 T = 1e3 + 1
-set.seed( 42853 )
+# seed = sample( 1:1e6, 1 )
+seed = 465782
+set.seed( seed )
 y = h = a = matrix(0, nrow = T, ncol = 1)
-a[1] = rnorm(1, mean = -1, sd = 1)
+a[1] = rnorm(1, mean = -2, sd = 1)
 h[1] = mu + sqrt( s2_h / (1 - phi * phi) ) * rnorm( 1 )
 y[1] = tau + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
 
@@ -25,8 +28,12 @@ for( t in 2:T ){
 }
 
 plot(y, type = 'l')
-#plot(a, type = 'l')
-#plot(exp(h), type = 'l')
+# Teste de Phillips-Perron (PP)
+ifelse( PP.test(y)$p.value < 0.05, 
+        'Série estacionária :)',
+        'Série não estacionária :(' )
+plot(a, type = 'l')
+
 
 # RStan Sampling
 p = 0.01
@@ -35,8 +42,8 @@ draws = rstan::sampling(model_stan,
                         data = list(T = length( y[ 1:(T-1) ] ), 
                                     y = as.numeric( y[ 1:(T-1) ] ),
                                     lambda = -log( p ) / sqrt( U ) ),
-                        chains = 1,
-                        iter = 5e2,
+                        chains = 4,
+                        iter = 1e4,
                         cores = 4
 )
 
@@ -111,9 +118,9 @@ g1 = g1 + theme(axis.title.x = element_text(size = 26),
 
 gridExtra::grid.arrange(g0, g1, nrow = 2)
 
-
 # Evaluation VaR
 VaR_hat = VaR(h_T = h_hmc[, dim( h_hmc )[2]],
               a_T = a_hmc[, dim( h_hmc )[2]],
               theta_hmc = theta
               )
+VaR_hat < y[ T ]
