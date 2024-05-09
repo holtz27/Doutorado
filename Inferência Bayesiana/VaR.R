@@ -1,4 +1,4 @@
-VaR = function( h_T, a_T, theta_hmc, p, k ){
+VaR = function( h_T, a_T, theta_hmc, p = 0.01, k ){
   
   theta = theta_hmc
   
