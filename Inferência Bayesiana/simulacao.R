@@ -7,42 +7,53 @@ tau = 0.1
 mu = -9
 phi = 0.985
 s2_h = 0.025
-T = 0.5e3
+T = 1e3
 seeds = NULL
+Summary = list()
 
 # Cenários
-s2_a = c(0.05, 0.5, 1.0)
-P = c(0.01, 0.25, 0.5)
+s2_a = c( 0.0, 0.05, 0.5, 1.0 )
+P = c( 0.01, 0.25, 0.5 )
+U = c( 0.1, 0.25, 0.5 )
 
-for( s in s2_a ){
-  for( p in P ){
-    seed = sample( 1:1e6, 1 )
-    set.seed( seed )
-    seeds = cbind( seeds, seed )
-    # Simulando dados
-    y = h = a = matrix(0, nrow = T, ncol = 1)
-    a[1] = rnorm(1, mean = -2, sd = 1)
-    h[1] = mu + sqrt( s2_h / (1 - phi * phi) ) * rnorm( 1 )
-    y[1] = tau + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
-    for( t in 2:T ){
-      a[t] = a[t-1] + sqrt( s ) * rnorm( 1 )
-      h[t] = mu + phi * (h[t-1] - mu) + sqrt( s2_h ) * rnorm( 1 )
-      y[t] = tau + a[t] * exp( h[t] ) + exp( 0.5 * h[t] ) * rnorm( 1 )
+# Replicas por cenário
+N = 2
+
+# Running...
+for( u in U ){
+  for( s in s2_a ){
+    for( p in P ){
+      for( n in 1:N ){
+        seed = sample( 1:1e6, 1 )
+        set.seed( seed )
+        seeds = cbind( seeds, seed )
+        # Simulando dados
+        y = h = a = matrix(0, nrow = T, ncol = 1)
+        a[1] = -0.05 #rnorm(1, mean = -2, sd = 1)
+        h[1] = mu + sqrt( s2_h / (1 - phi * phi) ) * rnorm( 1 )
+        y[1] = tau + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
+        for( t in 2:T ){
+          a[t] = a[t-1] + sqrt( s ) * rnorm( 1 )
+          h[t] = mu + phi * (h[t-1] - mu) + sqrt( s2_h ) * rnorm( 1 )
+          y[t] = tau + a[t] * exp( h[t] ) + exp( 0.5 * h[t] ) * rnorm( 1 )
+        }
+        # RStan Sampling
+        draws = rstan::sampling(model_stan, 
+                                data = list(T = length( y ), 
+                                            y = as.numeric( y ),
+                                            lambda = -log( p ) / sqrt( u ) ),
+                                chains = 2,
+                                warmup = 1e3,
+                                iter = 1e3 + 500,
+                                cores = 2
+        )
+        Summary[[ n ]] = rstan::summary( draws )$summary[c('tau', 'mu', 'phi', 's2_h', 's2_a'), 
+                                                  c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
+      }
+      save( Summary, 
+            file = paste0( path, 'U_', u, '/' , 'cenario', s , '_' , p, '.RData' ) 
+      )
     }
-    # RStan Sampling
-    U = 0.25
-    draws = rstan::sampling(model_stan, 
-                            data = list(T = length( y ), 
-                                        y = as.numeric( y ),
-                                        lambda = -log( p ) / sqrt( U ) ),
-                            chains = 2,
-                            warmup = 5e2,
-                            iter = 5e2 + 500,
-                            cores = 2
-    )
-    save( seeds, h , a, draws, 
-          file = paste0( path, 'U_0.25/','cenario', s , '_' , p, '.RData' ) 
-          )
   }
 }
 
@@ -50,13 +61,10 @@ for( s in s2_a ){
 library( ggplot2 )
 source( 'https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R' )
 # LOAD
-load("~/Doutorado/Disciplinas/Inf.Bayesiana/projeto0/simulacao/U_0.25/cenario1_0.5.RData")
+load('~/Doutorado/Disciplinas/Inf.Bayesiana/projeto0/simulacao/U_0.1/cenario0_0.01.RData')
 # Análise numérica
-round(
-  rstan::summary( draws )$summary[c('tau', 'mu', 'phi', 's2_h', 's2_a'), 
-                                  c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')],
-  3
-)
+summary = rstan::summary( draws )$summary[c('tau', 'mu', 'phi', 's2_h', 's2_a'), 
+                                          c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
 x = rstan::extract( draws )
 draws_tau = x$tau
 draws_mu = x$mu
