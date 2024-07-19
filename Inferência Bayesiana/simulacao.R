@@ -8,21 +8,26 @@ mu = -9
 phi = 0.985
 s2_h = 0.025
 T = 1e3
+time = 0
 seeds = NULL
-Summary = list()
+S = 0
 
 # Cenários
 s2_a = c( 0.0, 0.05, 0.5, 1.0 )
 P = c( 0.01, 0.25, 0.5 )
 U = c( 0.1, 0.25, 0.5 )
 
+Data = data_pivot0 = data_pivot1 = NULL
+
 # Replicas por cenário
 N = 2
 
 # Running...
 for( u in U ){
+  if( u == 0.1 ) time = time + Sys.time()
   for( s in s2_a ){
     for( p in P ){
+      
       for( n in 1:N ){
         seed = sample( 1:1e6, 1 )
         set.seed( seed )
@@ -47,15 +52,35 @@ for( u in U ){
                                 iter = 1e3 + 500,
                                 cores = 2
         )
-        Summary[[ n ]] = rstan::summary( draws )$summary[c('tau', 'mu', 'phi', 's2_h', 's2_a'), 
-                                                  c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
+        # Sample for validation
+        if( rbinom(1, 1, prob = .05) == 1 )
+          save( draws, 
+                file = paste0( '~/U_', u, '/' , 'draws', s , '_' , p, '.RData' ) 
+          )
+        
+        S = S + rstan::summary( draws )$summary['s2_a', c('mean', '2.5%', '97.5%')]
       }
-      save( Summary, 
-            file = paste0( path, 'U_', u, '/' , 'cenario', s , '_' , p, '.RData' ) 
-      )
+      S = S / N
+      x = matrix(c(u, u, p, p,
+                   S[1], S[2], NA, S[3]), nrow = 2, ncol = 4 )
+      data_pivot0 = rbind( data_pivot0, x )
     }
+    if( s == 0 )
+      data_pivot1 = cbind( data_pivot1, data_pivot0 )
+    else
+      data_pivot1 = cbind( data_pivot1, data_pivot0[, c(3, 4)] )
+  
+    data_pivot0 = NULL
   }
+  Data = rbind( Data, data_pivot1 )
+  data_pivot1 = NULL
+  if( u == 0.5 ) time = Sys.time() - time
 }
+
+time
+Data = data.frame( Data )
+colnames( Data ) = c('U', 'p', 's1','', 's2', '', 's3', '', 's4', '')
+Data
 
 #### Análise
 library( ggplot2 )
