@@ -8,7 +8,6 @@ lpds = function( h_T, a_T, theta_hmc, yobs, kernel = 'epanechnikov', seed = NULL
   densidade_yobs = rep( 0,length( yobs ) )
   
   for( h in 1:length( yobs ) ){
-    
     # h_new = mu + phi * ( h_T - mu ) + sigma_h * eps_h
     eps_h = rnorm( M, sd = sqrt(theta[4, ]) )
     h_new = theta[2, ] + theta[3, ] * ( h_T - theta[2, ] ) + eps_h
@@ -26,7 +25,7 @@ lpds = function( h_T, a_T, theta_hmc, yobs, kernel = 'epanechnikov', seed = NULL
     densidade_yobs[ h ] = approx(densidade$x, densidade$y, xout = yobs[ h ])$y
     h_T = h_new
     a_T = a_new
-    
   }
+  
   return( densidade_yobs ) 
 }
