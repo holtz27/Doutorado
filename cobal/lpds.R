@@ -28,6 +28,6 @@ lpds = function( h_T, a_T, theta_hmc, yobs, kernel = 'epanechnikov', seed = NULL
     a_T = a_new
     
   }
-  return( densidade_yobs ) 
+  return( log(densidade_yobs) ) 
 }
 
