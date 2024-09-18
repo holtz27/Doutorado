@@ -17,5 +17,5 @@ pred.rw = function( a_T, xi_hmc, a.test, kernel = 'epanechnikov', seed = NULL ){
     a_T = a.new
   }
 
-  return( sum( log(densidade_a.test ) ) ) 
+  return( -sum( log(densidade_a.test ) ) ) 
 }
