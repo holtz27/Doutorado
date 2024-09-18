@@ -4,7 +4,7 @@ model_stan = rstan::stan_model(file = 'rw.stan')
 # Settings
 m = 2
 err = hpd = prob.cov = rep(0, m)
-T = 50 #c(50, 500, 1500)
+T = 1500 #c(50, 500, 1500)
 xi = c(1e-6, 0.05, 0.1, 1.0)
 lambda = c(1, 5, 15)
 
@@ -43,6 +43,7 @@ for( x in xi ){
       #piv.hpd = coda::HPDinterval( draws_xi )[1, ]
       #amp.hpd[ i ] = piv.hpd[ 2 ] - piv.hpd[ 1 ]
       #if( (piv.hpd[ 1 ] < xi_hat) && (piv.hpd[ 2 ] > xi_hat) ) prob.cov[ i ] = 1
+      
     }
     vies = mean( err )
     reqm = sqrt( mean( err**2 ) )
