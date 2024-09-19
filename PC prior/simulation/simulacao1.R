@@ -43,7 +43,7 @@ for( x in xi ){
       draws_xi = as.numeric( draw$xi )
       # evaluation metrics
       xi_hat = mean( draws_xi )
-      err[ i ] = xi_hat - x
+      err[ i ] = (xi_hat - x) / x
       ### out of sample metric
       pred[ i ] = pred.rw(a_T = a[T-h], xi_hmc = draws_xi, a.test = a.test)
     }
