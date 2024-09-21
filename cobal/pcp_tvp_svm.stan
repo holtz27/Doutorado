@@ -40,7 +40,7 @@ model {
   mu ~ normal( 0, sqrt(10) );
   phiT ~ beta( 20, 1.5 );
   s2_h ~ inv_gamma( 2.5, 0.025 );
-  a1 ~ normal( -1.0, 10 );
+  a1 ~ normal( 0, 10 );
   
   // PC priori
   s2_a ~ weibull( 0.5, pow(lambda, -2 ) );
