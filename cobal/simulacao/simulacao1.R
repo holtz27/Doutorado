@@ -13,7 +13,8 @@ T = 1e3
 m = 50
 c.err = pcp.err = rep(0, m)
 xi = c(0, 0.05, 0.1, 1.0)
-lambda = -log(0.5) / sqrt( 1 )
+U = invgamma::qinvgamma(0.975, shape = 4.5, rate = 0.065)
+lambda = -log(0.025) / sqrt( U )
 
 # Initial Data frame
 Data = matrix(nrow = 4, ncol = 4)
