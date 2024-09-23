@@ -99,4 +99,4 @@ row.names( Data ) = c('c.vies', 'c.reqm', 'pcp.vies', 'pcp.reqm')
 colnames( Data ) = xi  
 round( Data, 4 )
 
-save(Data, file = 'Data.RData')
+save(Data, file = 'simulacao1.RData')
