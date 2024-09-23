@@ -1,3 +1,7 @@
+# Install packages if necessary
+if( !require(invgamma) ) install.packages('invgamma', repos = 'http://cran.us.r-project.org')
+if( !require(rstan) ) install.packages('rstan', repos = 'http://cran.us.r-project.org')
+
 # Stan model
 model_stan1 = rstan::stan_model(file = 'classic_tvp_svm.stan')
 model_stan2 = rstan::stan_model(file = 'pcp_tvp_svm.stan')
