@@ -1,4 +1,3 @@
-
 # Stan model
 model_stan1 = rstan::stan_model(file = 'classic_tvp_svm.stan')
 model_stan2 = rstan::stan_model(file = 'pcp_tvp_svm.stan')
@@ -11,10 +10,10 @@ s2_h = 0.025
 T = 1e3
 
 # Simulation Settings
-m = 2
+m = 50
 c.err = pcp.err = rep(0, m)
-xi = c(1e-9, 0.05, 0.1, 1.0)
-lambda = -log(0.5) / sqrt(1)
+xi = c(0, 0.05, 0.1, 1.0)
+lambda = -log(0.5) / sqrt( 1 )
 
 # Initial Data frame
 Data = matrix(nrow = 4, ncol = 4)
@@ -27,7 +26,7 @@ for( x in xi ){
     
     # Model
     y = h = a = matrix(0, nrow = T, ncol = 1)
-    a[1] = -0.05 #rnorm(1, mean = -2, sd = 1)
+    a[1] = -0.05 
     h[1] = mu + sqrt( s2_h / (1 - phi * phi) ) * rnorm( 1 )
     y[1] = b + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
     for( t in 2:T ){
@@ -51,7 +50,11 @@ for( x in xi ){
     draws_xi = as.numeric( draw$s2_a )
     # evaluation metrics
     xi_hat = mean( draws_xi )
-    c.err[ i ] = (xi_hat - x) / x
+    if( x == 0){
+      c.err[ i ] = xi_hat - x
+    }else{
+      c.err[ i ] = (xi_hat - x) / x
+    }
     
     ######################
     # PCP RStan Sampling #
@@ -70,8 +73,12 @@ for( x in xi ){
     draws_xi = as.numeric( draw$s2_a )
     # evaluation metrics
     xi_hat = mean( draws_xi )
-    pcp.err[ i ] = (xi_hat - x) / x
-
+    if( x == 0){
+      pcp.err[ i ] = xi_hat - x
+    }else{
+      pcp.err[ i ] = (xi_hat - x) / x
+    }
+    
   }
   c.vies = mean( c.err )
   pcp.vies = mean( pcp.err )
@@ -87,8 +94,8 @@ for( x in xi ){
 }
 
 time
-row.names( Data ) = c( 'c.vies', 'c.reqm', 'pcp.vies', 'pcp.reqm')
+row.names( Data ) = c('c.vies', 'c.reqm', 'pcp.vies', 'pcp.reqm')
 colnames( Data ) = xi  
-Data
+round( Data, 4 )
 
-#save(Data, file = 'Data_500.RData')
+#save(Data, file = 'Data.RData')
