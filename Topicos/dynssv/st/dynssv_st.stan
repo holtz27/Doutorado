@@ -5,7 +5,8 @@ data {
   real<lower=0> lambda2;
 }
 parameters{
-  real mu;                      
+  real mu_h;
+  real mu_a;
   real<lower=0, upper=1> phiT_h;
   real<lower=0, upper=1> phiT_a;
   real<lower=0> s_h;
@@ -31,12 +32,15 @@ transformed parameters{
   s2_a = pow( s_a, 2 );
   
   h[1] /= sqrt(1 - phi_h * phi_h);
-  a[1] += a1;
-  h += mu;
+  a[1] /= sqrt(1 - phi_a * phi_a);
+  h += mu_h;
+  a += mu_a;
   for (t in 2:T){
-    h[t] += phi_h * (h[t - 1] - mu);
-    a[t] += phi_a * a[t-1];
+    h[t] += phi_h * (h[t - 1] - mu_h);
+    a[t] += phi_a * (a[t-1] - mu_a);
   }
+  
+  a[ 1 ] = a1;
   
   vector<lower=-1, upper=1>[T] delta = a ./ sqrt(1 + square(a) );
   real k1 = sqrt(0.5 * v) * tgamma(0.5*(v-1)) / tgamma(0.5 * v);
@@ -49,14 +53,15 @@ transformed parameters{
 }
 model {
   // Prioris h
-  mu ~ normal( 0, sqrt(10) );
+  mu_h ~ normal( 0, sqrt(10) );
   phiT_h ~ beta( 20, 1.5 );
   s2_h ~ inv_gamma( 2.5, 0.025 );
   
   // Prioris a
-  a1 ~ normal( 0, 1 );
+  a1 ~ normal( 0, sqrt(10) );
+  mu_a ~ normal( 0, sqrt(10) );
   s2_a ~ weibull( 0.5, pow(lambda2, -2 ) );
-  //s2_a ~ inv_gamma( 4.5, 0.065 );
+  //s2_a ~ inv_gamma( 2.5, 0.025 );
   
   v ~ gamma(12, .8);
   
