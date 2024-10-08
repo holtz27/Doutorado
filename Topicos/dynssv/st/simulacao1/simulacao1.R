@@ -64,8 +64,8 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e2,
-                          iter = 2e2 + 2e2,
+                          warmup = 2e3,
+                          iter = 2e3 + 1e3,
                           cores = 1
   )
   x = rstan::extract( draws )
@@ -74,14 +74,14 @@ for(it in 1:M){
   draws_s_h = x$s_h
   draws_mu_a = x$mu_a
   draws_phi_a = x$phi_a
-  draws_s_a = x$s_a
+  draws_ls_a = x$ls_a
   draws_v = x$v
   theta = matrix( draws_mu_h, nrow = 1 )
   theta = rbind( theta, draws_phi_h )
   theta = rbind( theta, draws_s_h )
   theta = rbind( theta, draws_mu_a)
   theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_s_a )
+  theta = rbind( theta, draws_ls_a )
   theta = rbind( theta, draws_v )
   
   summary1[[ it ]] = num_analisys(draws = theta, 
@@ -107,8 +107,8 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e2,
-                          iter = 2e2 + 2e2,
+                          warmup = 2e3,
+                          iter = 2e3 + 1e3,
                           cores = 1
   )
   x = rstan::extract( draws )
@@ -117,14 +117,14 @@ for(it in 1:M){
   draws_s_h = x$s_h
   draws_mu_a = x$mu_a
   draws_phi_a = x$phi_a
-  draws_s_a = x$s_a
+  draws_ls_a = x$ls_a
   draws_v = x$v
   theta = matrix( draws_mu_h, nrow = 1 )
   theta = rbind( theta, draws_phi_h )
   theta = rbind( theta, draws_s_h )
   theta = rbind( theta, draws_mu_a)
   theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_s_a )
+  theta = rbind( theta, draws_ls_a )
   theta = rbind( theta, draws_v )
   
   summary2[[ it ]] = num_analisys(draws = theta, 
@@ -150,8 +150,8 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e2,
-                          iter = 2e2 + 2e2,
+                          warmup = 2e3,
+                          iter = 2e3 + 1e3,
                           cores = 1
   )
   x = rstan::extract( draws )
@@ -160,14 +160,14 @@ for(it in 1:M){
   draws_s_h = x$s_h
   draws_mu_a = x$mu_a
   draws_phi_a = x$phi_a
-  draws_s_a = x$s_a
+  draws_ls_a = x$ls_a
   draws_v = x$v
   theta = matrix( draws_mu_h, nrow = 1 )
   theta = rbind( theta, draws_phi_h )
   theta = rbind( theta, draws_s_h )
   theta = rbind( theta, draws_mu_a)
   theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_s_a )
+  theta = rbind( theta, draws_ls_a )
   theta = rbind( theta, draws_v )
   
   summary3[[ it ]] = num_analisys(draws = theta, 
