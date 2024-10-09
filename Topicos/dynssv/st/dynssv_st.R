@@ -4,6 +4,7 @@ rtnorm = function(n){
   return( qnorm( 0.5 * (u + 1) ) )
 }
 source('https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R')
+source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
 # Obtém o caminho completo do arquivo
 localenvir = rstudioapi::getActiveDocumentContext()
 path = localenvir$path
@@ -13,22 +14,21 @@ path = paste0( dir, '/dynssv_st.stan')
 model_stan = rstan::stan_model(file = path)
 
 set.seed(164872)
-T = 1e3
+T = 1.5e3
 # log-volatility
 mu_h = 0
 phi_h = 0.99
 sigma_h = 0.1
 # dynskew
-a1 = -0.5
-mu_a = a1
-phi_a = 0.995
-sigma_a = 0.01
+mu_a = -0.5
+phi_a = 0.99
+sigma_a = 0.1
 a = delta = omega = rep(0 , T)
-a[1] = a1
+a[1] = mu_a + sigma_a / sqrt( 1 - phi_a * phi_a ) * rnorm(1)
 for(t in 2:T) a[t] = mu_a + phi_a * (a[t-1] - mu_a) + sigma_a * rnorm(1)
 delta = a / sqrt(1 + a*a)
 
-v = 20
+v = 10
 
 k1 = sqrt(0.5 * v) * gamma(0.5*(v-1)) / gamma(0.5 * v)
 k2 = v / (v-2);
@@ -61,42 +61,40 @@ round( data_summary, digits = 4 )
 draws = rstan::sampling(model_stan, 
                         data = list(T = length( y ), 
                                     y = as.numeric( y ),
-                                    lambda1 = 2,
-                                    lambda2 = 5
+                                    lambda1 = 1.55,
+                                    lambda2 = 14.34
                         ),
-                        chains = 2,
+                        chains = 1,
                         warmup = 5e3,
-                        iter = 5e3 + 0.5e3,
-                        cores = 2
+                        iter = 5e3 + 1e3,
+                        cores = 1
 )
-x = rstan::extract( draws )
-draws_mu_h = x$mu_h
-draws_phi_h = x$phi_h
-draws_s_h = x$s_h
-draws_a1 = x$a1
-draws_mu_a = x$mu_a
-draws_phi_a = x$phi_a
-draws_s_a = x$s_a
-draws_v = x$v
-theta = matrix( draws_mu_h, nrow = 1 )
-theta = rbind( theta, draws_phi_h )
-theta = rbind( theta, draws_s_h )
-theta = rbind( theta, draws_a1 )
-theta = rbind( theta, draws_mu_a)
-theta = rbind( theta, draws_phi_a )
-theta = rbind( theta, draws_s_a )
-theta = rbind( theta, draws_v )
+x = rstan::extract(draws)
+theta = matrix(x$mu_h, nrow = 1)
+theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$s_a, x$v)
 # Plots
 #pdf( 'pcp_traces.pdf', width = 20, height = 10 )
 trace_plots(theta,
             burn = 0, lags = 1,
-            names = c('mu', 'phi_h', 's_h', 'a1', 'mu_a', 'phi_a', 's_a', 'v') )
+            names = c(expression(mu[h]), 
+                      expression(phi[h]),
+                      expression(sigma[h]),
+                      expression(mu[a]),
+                      expression(phi[a]),
+                      expression(log(sigma[a]) ),
+                      expression(nu)
+                      ) 
+            )
 #dev.off()
 
 # Numeric Analysis
-summary = rstan::summary( draws )$summary[c('mu_h', 'phi_h', 's_h', 'a1', 'mu_a', 'phi_a', 's_a', 'v'), 
-                                          c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
-round( summary, 4 )
+num_analisys(draws = theta, 
+             names = c('mu_h', 'phi_h', 's_h', 
+                       'mu_a', 'phi_a', 'ls_a', 
+                       'v'),
+             digits = 4,
+             hdp = TRUE
+)
 
 # h
 draws_h = x$h
@@ -117,9 +115,3 @@ plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
 lines( a_min, type = 'l', lty = 2 )
 lines( a_max, type = 'l', lty = 2 )
 lines( a, type = 'l', col = 'red')
-
-
-
-
-
-
