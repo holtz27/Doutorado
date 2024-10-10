@@ -66,7 +66,7 @@ model {
   //s2_a ~ inv_gamma( 2.5, 0.025 );
   
   //prior3
-  k ~ gamma(0.1, 0.1);
+  k ~ gamma( 2.65, 0.1 );
   s_a ~ exponential( k );
   
   target += - lambda1 * sqrt(1 - phi_a) - 0.5 * log(1 - phi_a);
