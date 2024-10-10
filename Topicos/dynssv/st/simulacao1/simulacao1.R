@@ -14,17 +14,17 @@ model_stan2 = rstan::stan_model(file = path)
 path = paste0( dir, '/dynssv_st3.stan')
 model_stan3 = rstan::stan_model(file = path)
 
-set.seed(164872)
-T = 1e3
+#set.seed(164872)
+T = 1e2
 # log-volatility
 mu_h = 0
 phi_h = 0.99
 sigma_h = 0.1
 # dynskew
-mu_a = -0.5
+mu_a = 0
 phi_a = 0.99
 sigma_a = 0.1
-v = 20
+v = 10
 
 theta_vdd = matrix(c(mu_h, phi_h, sigma_h, 
                      mu_a, phi_a, log(sigma_a), 
@@ -32,9 +32,14 @@ theta_vdd = matrix(c(mu_h, phi_h, sigma_h,
 summary1 = summary2 = summary3 = list()
 prob1 = prob2 = prob3 = matrix(0, nrow = 7, ncol = 1)
 
-M = 2
+M = 10
+m = 2
 err1 = err2 = err3= matrix(0, nrow = 7, ncol = M)
 vies1 = reqm1 = vies2 = reqm2 = vies3 = reqm3 = matrix(0, nrow = 1, ncol = 3)
+saver = M / m
+
+warmup = 2e2
+iters = 1e2
 
 for(it in 1:M){
   if( it == 1 ) time = Sys.time()
@@ -64,25 +69,13 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e3,
-                          iter = 2e3 + 1e3,
+                          warmup = warmup,
+                          iter = warmup + iters,
                           cores = 1
   )
-  x = rstan::extract( draws )
-  draws_mu_h = x$mu_h
-  draws_phi_h = x$phi_h
-  draws_s_h = x$s_h
-  draws_mu_a = x$mu_a
-  draws_phi_a = x$phi_a
-  draws_ls_a = x$ls_a
-  draws_v = x$v
-  theta = matrix( draws_mu_h, nrow = 1 )
-  theta = rbind( theta, draws_phi_h )
-  theta = rbind( theta, draws_s_h )
-  theta = rbind( theta, draws_mu_a)
-  theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_ls_a )
-  theta = rbind( theta, draws_v )
+  x = rstan::extract(draws)
+  theta = matrix(x$mu_h, nrow = 1)
+  theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
   
   summary1[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
@@ -107,25 +100,13 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e3,
-                          iter = 2e3 + 1e3,
+                          warmup = warmup,
+                          iter = warmup + iters,
                           cores = 1
   )
-  x = rstan::extract( draws )
-  draws_mu_h = x$mu_h
-  draws_phi_h = x$phi_h
-  draws_s_h = x$s_h
-  draws_mu_a = x$mu_a
-  draws_phi_a = x$phi_a
-  draws_ls_a = x$ls_a
-  draws_v = x$v
-  theta = matrix( draws_mu_h, nrow = 1 )
-  theta = rbind( theta, draws_phi_h )
-  theta = rbind( theta, draws_s_h )
-  theta = rbind( theta, draws_mu_a)
-  theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_ls_a )
-  theta = rbind( theta, draws_v )
+  x = rstan::extract(draws)
+  theta = matrix(x$mu_h, nrow = 1)
+  theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
   
   summary2[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
@@ -150,25 +131,13 @@ for(it in 1:M){
                                       lambda2 = 14.34
                           ),
                           chains = 1,
-                          warmup = 2e3,
-                          iter = 2e3 + 1e3,
+                          warmup = warmup,
+                          iter = warmup + iters,
                           cores = 1
   )
   x = rstan::extract( draws )
-  draws_mu_h = x$mu_h
-  draws_phi_h = x$phi_h
-  draws_s_h = x$s_h
-  draws_mu_a = x$mu_a
-  draws_phi_a = x$phi_a
-  draws_ls_a = x$ls_a
-  draws_v = x$v
-  theta = matrix( draws_mu_h, nrow = 1 )
-  theta = rbind( theta, draws_phi_h )
-  theta = rbind( theta, draws_s_h )
-  theta = rbind( theta, draws_mu_a)
-  theta = rbind( theta, draws_phi_a )
-  theta = rbind( theta, draws_ls_a )
-  theta = rbind( theta, draws_v )
+  theta = matrix(x$mu_h, nrow = 1)
+  theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
   
   summary3[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
@@ -185,37 +154,45 @@ for(it in 1:M){
   prob.piv = matrix( round( 0.5 * (x1 + x2), 0 ), ncol = 1)
   prob3 = prob3 + prob.piv
   
+  if( it == saver ){
+    
+    vies1 = matrix( apply( err1, MARGIN = 1, mean ), ncol = 1 )
+    reqm1 = matrix( apply( err1^2, MARGIN = 1, mean ), ncol = 1 )
+    prob1 = prob1 / M
+    data1 = cbind( vies1, reqm1, prob1 )
+    data1 = data.frame( data1 )
+    colnames( data1 ) = c('vies1', 'reqm1', 'prob.cob1')
+    
+    vies2 = matrix( apply( err2, MARGIN = 1, mean ), ncol = 1 )
+    reqm2 = matrix( apply( err2^2, MARGIN = 1, mean ), ncol = 1 )
+    prob2 = prob2 / M
+    data2 = cbind( vies2, reqm2, prob2 )
+    data2 = data.frame( data2 )
+    colnames( data2 ) = c('vies2', 'reqm2', 'prob.cob2')
+    
+    vies3 = matrix( apply( err3, MARGIN = 1, mean ), ncol = 1 )
+    reqm3 = matrix( apply( err3^2, MARGIN = 1, mean ), ncol = 1 )
+    prob3 = prob3 / M
+    data3 = cbind( vies3, reqm3, prob3 )
+    colnames( data3 ) = c('vies3', 'reqm3', 'prob.cob3')
+    
+    data = cbind( data1, data2, data3 )
+    row.names( data ) = c('mu_h', 'phi_h', 's_h', 
+                          'mu_a', 'phi_a', 'ls_a', 
+                          'v')
+    Summary = list( summary1 = summary1, 
+                    summary2 = summary2, 
+                    summary3 = summary3 )
+    
+    save( data, Summary, file = paste0( dir, '/simulacao1.RData') )
+    saver = saver + M / m
+  }
+  
   if( it == M ) time = Sys.time() - time
 }
 
 time
 
-vies1 = matrix( apply( err1, MARGIN = 1, mean ), ncol = 1 )
-reqm1 = matrix( apply( err1^2, MARGIN = 1, mean ), ncol = 1 )
-prob1 = prob1 / M
-data1 = cbind( vies1, reqm1, prob1 )
-data1 = data.frame( data1 )
-colnames( data1 ) = c('vies1', 'reqm1', 'prob.cob1')
 
-vies2 = matrix( apply( err2, MARGIN = 1, mean ), ncol = 1 )
-reqm2 = matrix( apply( err2^2, MARGIN = 1, mean ), ncol = 1 )
-prob2 = prob2 / M
-data2 = cbind( vies2, reqm2, prob2 )
-data2 = data.frame( data2 )
-colnames( data2 ) = c('vies2', 'reqm2', 'prob.cob2')
 
-vies3 = matrix( apply( err3, MARGIN = 1, mean ), ncol = 1 )
-reqm3 = matrix( apply( err3^2, MARGIN = 1, mean ), ncol = 1 )
-prob3 = prob3 / M
-data3 = cbind( vies3, reqm3, prob3 )
-colnames( data3 ) = c('vies3', 'reqm3', 'prob.cob3')
 
-data = cbind( data1, data2, data3 )
-row.names( data ) = c('mu_h', 'phi_h', 's_h', 
-                       'mu_a', 'phi_a', 'ls_a', 
-                       'v')
-Summary = list( summary1 = summary1, 
-                summary2 = summary2, 
-                summary3 = summary3 )
-
-save( data, Summary, file = paste0( dir, '/simulacao1.RData') )
