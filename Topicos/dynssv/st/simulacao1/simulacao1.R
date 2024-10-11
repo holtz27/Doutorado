@@ -14,7 +14,7 @@ model_stan2 = rstan::stan_model(file = path)
 path = paste0( dir, '/dynssv_st3.stan')
 model_stan3 = rstan::stan_model(file = path)
 
-#set.seed( 164872 )
+set.seed( 8936381 ) # 164872
 T = 1e3
 # log-volatility
 mu_h = 0
@@ -30,14 +30,13 @@ theta_vdd = matrix(c(mu_h, phi_h, sigma_h,
                      mu_a, phi_a, log(sigma_a), 
                      v), ncol = 1)
 summary1 = summary2 = summary3 = list()
-prob1 = prob2 = prob3 = matrix(0, nrow = 7, ncol = 1)
 
 M = 100
 m = 5
 saver = M / m
 
-warmup = 2e2
-iters = 1e2
+warmup = 2e3
+iters = 1e3
 
 for(it in 1:M){
   
@@ -155,4 +154,3 @@ s = Summary$summary3
 y = res.sim( s, theta_vdd, med.abs = FALSE )
 y$errors
 y$metricas
-
