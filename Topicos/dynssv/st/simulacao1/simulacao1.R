@@ -14,16 +14,16 @@ model_stan2 = rstan::stan_model(file = path)
 path = paste0( dir, '/dynssv_st3.stan')
 model_stan3 = rstan::stan_model(file = path)
 
-#set.seed(164872)
-T = 1e2
+#set.seed( 164872 )
+T = 1e3
 # log-volatility
 mu_h = 0
 phi_h = 0.99
-sigma_h = 0.1
+sigma_h = 0.15
 # dynskew
 mu_a = 0
 phi_a = 0.99
-sigma_a = 0.1
+sigma_a = 0.01
 v = 10
 
 theta_vdd = matrix(c(mu_h, phi_h, sigma_h, 
@@ -32,16 +32,17 @@ theta_vdd = matrix(c(mu_h, phi_h, sigma_h,
 summary1 = summary2 = summary3 = list()
 prob1 = prob2 = prob3 = matrix(0, nrow = 7, ncol = 1)
 
-M = 10
-m = 2
-err1 = err2 = err3= matrix(0, nrow = 7, ncol = M)
-vies1 = reqm1 = vies2 = reqm2 = vies3 = reqm3 = matrix(0, nrow = 1, ncol = 3)
+M = 100
+m = 5
 saver = M / m
 
 warmup = 2e2
 iters = 1e2
 
 for(it in 1:M){
+  
+  if( (M %% m) != 0 ) stop('M precisar ser divisivel por m!')
+  
   if( it == 1 ) time = Sys.time()
   #Data
   a = delta = omega = rep(0 , T)
@@ -76,7 +77,6 @@ for(it in 1:M){
   x = rstan::extract(draws)
   theta = matrix(x$mu_h, nrow = 1)
   theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
-  
   summary1[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
                                             'mu_a', 'phi_a', 'ls_a', 
@@ -84,14 +84,7 @@ for(it in 1:M){
                                   digits = 4,
                                   hdp = TRUE
                                   )
-  # error
-  err1[ ,it ] = matrix(summary1[[ it ]][, 1], ncol = 1) - theta_vdd
-  # prob
-  x1 = as.numeric( summary1[[ it ]][, 3] < theta_vdd )
-  x2 = as.numeric( summary1[[ it ]][, 4] > theta_vdd )
-  prob.piv = matrix( round( 0.5 * (x1 + x2), 0 ), ncol = 1)
-  prob1 = prob1 + prob.piv
-  
+
   ### Sampling2
   draws = rstan::sampling(model_stan2, 
                           data = list(T = length( y ), 
@@ -107,7 +100,6 @@ for(it in 1:M){
   x = rstan::extract(draws)
   theta = matrix(x$mu_h, nrow = 1)
   theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
-  
   summary2[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
                                             'mu_a', 'phi_a', 'ls_a', 
@@ -115,13 +107,6 @@ for(it in 1:M){
                                   digits = 4,
                                   hdp = TRUE
   )
-  # error
-  err2[ ,it ] = matrix(summary2[[ it ]][, 1], ncol = 1) - theta_vdd
-  # prob
-  x1 = as.numeric( summary2[[ it ]][, 3] < theta_vdd )
-  x2 = as.numeric( summary2[[ it ]][, 4] > theta_vdd )
-  prob.piv = matrix( round( 0.5 * (x1 + x2), 0 ), ncol = 1)
-  prob2 = prob2 + prob.piv
   
   ### Sampling3
   draws = rstan::sampling(model_stan3, 
@@ -138,7 +123,6 @@ for(it in 1:M){
   x = rstan::extract( draws )
   theta = matrix(x$mu_h, nrow = 1)
   theta = rbind(theta, x$phi_h, x$s_h, x$mu_a, x$phi_a, x$ls_a, x$v)
-  
   summary3[[ it ]] = num_analisys(draws = theta, 
                                   names = c('mu_h', 'phi_h', 's_h', 
                                             'mu_a', 'phi_a', 'ls_a', 
@@ -146,53 +130,29 @@ for(it in 1:M){
                                   digits = 4,
                                   hdp = TRUE
   )
-  # error
-  err3[ ,it ] = matrix(summary3[[ it ]][, 1], ncol = 1) - theta_vdd
-  # prob
-  x1 = as.numeric( summary1[[ it ]][, 3] < theta_vdd )
-  x2 = as.numeric( summary1[[ it ]][, 4] > theta_vdd )
-  prob.piv = matrix( round( 0.5 * (x1 + x2), 0 ), ncol = 1)
-  prob3 = prob3 + prob.piv
-  
+  # saver
   if( it == saver ){
     
-    vies1 = matrix( apply( err1, MARGIN = 1, mean ), ncol = 1 )
-    reqm1 = matrix( apply( err1^2, MARGIN = 1, mean ), ncol = 1 )
-    prob1 = prob1 / M
-    data1 = cbind( vies1, reqm1, prob1 )
-    data1 = data.frame( data1 )
-    colnames( data1 ) = c('vies1', 'reqm1', 'prob.cob1')
-    
-    vies2 = matrix( apply( err2, MARGIN = 1, mean ), ncol = 1 )
-    reqm2 = matrix( apply( err2^2, MARGIN = 1, mean ), ncol = 1 )
-    prob2 = prob2 / M
-    data2 = cbind( vies2, reqm2, prob2 )
-    data2 = data.frame( data2 )
-    colnames( data2 ) = c('vies2', 'reqm2', 'prob.cob2')
-    
-    vies3 = matrix( apply( err3, MARGIN = 1, mean ), ncol = 1 )
-    reqm3 = matrix( apply( err3^2, MARGIN = 1, mean ), ncol = 1 )
-    prob3 = prob3 / M
-    data3 = cbind( vies3, reqm3, prob3 )
-    colnames( data3 ) = c('vies3', 'reqm3', 'prob.cob3')
-    
-    data = cbind( data1, data2, data3 )
-    row.names( data ) = c('mu_h', 'phi_h', 's_h', 
-                          'mu_a', 'phi_a', 'ls_a', 
-                          'v')
     Summary = list( summary1 = summary1, 
                     summary2 = summary2, 
                     summary3 = summary3 )
     
-    save( data, Summary, file = paste0( dir, '/simulacao1.RData') )
+    save( Summary, theta_vdd, file = paste0( dir, '/simulacao1.1.RData') )
     saver = saver + M / m
+    
   }
-  
   if( it == M ) time = Sys.time() - time
+  
 }
 
 time
 
+# Analazing...
+source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/source/res.sim.R')
+load('~/dynssv/st/simulacao1/simulacao1.1.RData')
 
-
+s = Summary$summary3
+y = res.sim( s, theta_vdd, med.abs = FALSE )
+y$errors
+y$metricas
 
