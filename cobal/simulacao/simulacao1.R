@@ -1,7 +1,7 @@
 # Install packages if necessary
 if( !require(invgamma) ) install.packages('invgamma', repos = 'http://cran.us.r-project.org')
 if( !require(rstan) ) install.packages('rstan', repos = 'http://cran.us.r-project.org')
-if( !require(coda) ) install.packages('rstan', repos = 'http://cran.us.r-project.org')
+if( !require(coda) ) install.packages('coda', repos = 'http://cran.us.r-project.org')
 
 model_stan1 = rstan::stan_model(file = 'pcp.stan')
 model_stan2 = rstan::stan_model(file = 'ig.stan')
