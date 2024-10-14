@@ -1,106 +1,130 @@
 # Install packages if necessary
 if( !require(invgamma) ) install.packages('invgamma', repos = 'http://cran.us.r-project.org')
 if( !require(rstan) ) install.packages('rstan', repos = 'http://cran.us.r-project.org')
+if( !require(coda) ) install.packages('rstan', repos = 'http://cran.us.r-project.org')
 
-# Stan model
-model_stan1 = rstan::stan_model(file = 'classic_tvp_svm.stan')
-model_stan2 = rstan::stan_model(file = 'pcp_tvp_svm.stan')
+model_stan1 = rstan::stan_model(file = 'pcp.stan')
+model_stan2 = rstan::stan_model(file = 'ig.stan')
+model_stan3 = rstan::stan_model(file = 'exp.stan')
 
 # Data Settings
-b = 0.1
-mu = -9
-phi = 0.985
-s2_h = 0.025
 T = 1e3
+b = 0.1
+mu = 0
+phi = 0.99 #0.95, 0.99
+sigma = 0.1
+xi = 0.01 # 0.01, 0.25, 1.0
 
-# Simulation Settings
-m = 50
-c.err = pcp.err = rep(0, m)
-xi = c(0, 0.05, 0.1, 1.0)
-U = invgamma::qinvgamma(0.975, shape = 4.5, rate = 0.065)
-lambda = -log(0.025) / sqrt( U )
+theta_vdd = matrix(c(b, mu, phi, sigma, log(xi) ), ncol = 1)
+summary1 = summary2 = summary3 = list()
 
-# Initial Data frame
-Data = matrix(nrow = 4, ncol = 4)
-c = 1
+u = 0.95
+q = invgamma::qinvgamma(u, shape = 4.5, rate = 0.065)
+lambda = -log(1 - u) / sqrt( q )
 
-# run simulation
-for( x in xi ){
-  if( x == xi[1] ) time = Sys.time()
-  for( i in 1:m ){
+M = 1
+m = 1
+saver = M / m
+
+warmup = 1e3
+iters = 1e3
+
+for(it in 1:M){
+  if( (M %% m) != 0 ) stop('M precisar ser divisivel por m!')
+  if( it == 1 ) time = Sys.time()
+  #Data
+  y = h = a = matrix(0, nrow = T, ncol = 1)
+  a[1] = -0.05 
+  h[1] = mu + (sigma / sqrt( (1 - phi * phi) )) * rnorm( 1 )
+  y[1] = b + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
+  for( t in 2:T ){
+    a[t] = a[t-1] + sqrt( xi ) * rnorm( 1 )
+    h[t] = mu + phi * (h[t-1] - mu) + sigma * rnorm( 1 )
+    y[t] = b + a[t] * exp( h[t] ) + exp( 0.5 * h[t] ) * rnorm( 1 )
+  }
+  
+  ### Sampling1
+  draws = rstan::sampling(model_stan1, 
+                          data = list(T = length( y ), 
+                                      y = as.numeric( y ),
+                                      lambda = lambda
+                          ),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iters,
+                          cores = 1
+  )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
+  summary1[[ it ]] = num_analisys(draws = theta, 
+                                  names = c('b', 
+                                            'mu', 
+                                            'phi_h', 
+                                            's_h', 
+                                            'ls_a'),
+                                  digits = 4,
+                                  hdp = TRUE
+  )
+  
+  ### Sampling2
+  draws = rstan::sampling(model_stan2, 
+                          data = list(T = length( y ), 
+                                      y = as.numeric( y )
+                                      ),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iters,
+                          cores = 1
+  )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
+  summary2[[ it ]] = num_analisys(draws = theta, 
+                                  names = c('b', 
+                                            'mu', 
+                                            'phi_h', 
+                                            's_h', 
+                                            'ls_a'),
+                                  digits = 4,
+                                  hdp = TRUE
+  )
+  
+  ### Sampling3
+  draws = rstan::sampling(model_stan3, 
+                          data = list(T = length( y ), 
+                                      y = as.numeric( y )
+                          ),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iters,
+                          cores = 1
+  )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
+  summary3[[ it ]] = num_analisys(draws = theta, 
+                                  names = c('b', 
+                                            'mu', 
+                                            'phi_h', 
+                                            's_h', 
+                                            'ls_a'),
+                                  digits = 4,
+                                  hdp = TRUE
+  )
+  
+  # saver
+  if( it == saver ){
     
-    # Model
-    y = h = a = matrix(0, nrow = T, ncol = 1)
-    a[1] = -0.05 
-    h[1] = mu + sqrt( s2_h / (1 - phi * phi) ) * rnorm( 1 )
-    y[1] = b + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
-    for( t in 2:T ){
-      a[t] = a[t-1] + sqrt( xi ) * rnorm( 1 )
-      h[t] = mu + phi * (h[t-1] - mu) + sqrt( s2_h ) * rnorm( 1 )
-      y[t] = b + a[t] * exp( h[t] ) + exp( 0.5 * h[t] ) * rnorm( 1 )
-    }
-    ##########################
-    # Classic RStan Sampling #
-    ##########################
-    draws = rstan::sampling(model_stan1, 
-                            data = list(T = length( y ), 
-                                        y = as.numeric( y )
-                            ),
-                            chains = 2,
-                            warmup = 1e3,
-                            iter = 1e3 + 500,
-                            cores = 2
-    )
-    draw = rstan::extract( draws )
-    draws_xi = as.numeric( draw$s2_a )
-    # evaluation metrics
-    xi_hat = mean( draws_xi )
-    if( x == 0){
-      c.err[ i ] = xi_hat - x
-    }else{
-      c.err[ i ] = (xi_hat - x) / x
-    }
+    Summary = list( summary1 = summary1, 
+                    summary2 = summary2, 
+                    summary3 = summary3 )
     
-    ######################
-    # PCP RStan Sampling #
-    ######################
-    draws = rstan::sampling(model_stan2, 
-                            data = list(T = length( y ), 
-                                        y = as.numeric( y ),
-                                        lambda = lambda 
-                            ),
-                            chains = 2,
-                            warmup = 1e3,
-                            iter = 1e3 + 500,
-                            cores = 2
-    )
-    draw = rstan::extract( draws )
-    draws_xi = as.numeric( draw$s2_a )
-    # evaluation metrics
-    xi_hat = mean( draws_xi )
-    if( x == 0){
-      pcp.err[ i ] = xi_hat - x
-    }else{
-      pcp.err[ i ] = (xi_hat - x) / x
-    }
+    save( Summary, theta_vdd, file = paste0( dir, '/simulacao1.RData') )
+    saver = saver + M / m
     
   }
-  c.vies = mean( c.err )
-  pcp.vies = mean( pcp.err )
-  c.reqm = sqrt( mean( c.err**2 ) )
-  pcp.reqm = sqrt( mean( pcp.err**2 ) )
-  
-  Data[ 1, c ] = c.vies
-  Data[ 2, c ] = c.reqm
-  Data[ 3, c ] = pcp.vies
-  Data[ 4, c ] = pcp.reqm
-  c = c + 1
-  if( x == xi[4] ) time = Sys.time() - time
+  if( it == M ) time = Sys.time() - time
 }
 
 time
-row.names( Data ) = c('c.vies', 'c.reqm', 'pcp.vies', 'pcp.reqm')
-colnames( Data ) = xi  
-round( Data, 4 )
-
-save(Data, file = 'simulacao1.RData')
