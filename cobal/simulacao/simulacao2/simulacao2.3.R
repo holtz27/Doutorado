@@ -15,7 +15,7 @@ b = 0.1
 mu = 0
 phi = 0.95 #0.95, 0.99
 sigma = 0.15 #0.1, 0.15
-xi = 0.25 # 0.01, 0.25, 1.0
+xi = 0.1 # 0.01, 0.1, 1.0
 
 summary = list()
 
@@ -23,8 +23,8 @@ u = 0.95
 q = invgamma::qinvgamma(u, shape = 4.5, rate = 0.065)
 lambda = -log(1 - u) / sqrt( q )
 
-M = 10
-m = 2
+M = 1
+m = 1
 saver = M / m
 
 k = 5
