@@ -18,6 +18,7 @@ sigma = 0.15 #0.1, 0.15
 xi = 0.1 # 0.01, 0.25, 1.0
 
 summary = list()
+Time = 0
 
 u = 0.95
 q = invgamma::qinvgamma(u, shape = 4.5, rate = 0.065)
@@ -35,7 +36,17 @@ iters = 1e2
 
 for(it in 1:M){
   if( (M %% m) != 0 ) stop('M precisar ser divisivel por m!')
-  if( it == 1 ) time = Sys.time()
+  time = Sys.time()
+  
+  cat( '\014' )
+  cat('Réplica: ', it, '/', M, '\n', '\n')
+  if( it == 1 ){
+    cat('Tempo restante total estimado: Calculando...', '\n' )
+  }else{
+    cat('Tempo restante total estimado: ', 
+        round((M - it + 1) * (Time / (it-1)), 1), 'mins',
+        '\n' )
+  }
   
   #Data
   y = h = a = matrix(0, nrow = T, ncol = 1)
@@ -91,7 +102,8 @@ for(it in 1:M){
     saver = saver + M / m
     
   }
-  if( it == M ) time = Sys.time() - time
+  time = Sys.time() - time
+  Time = Time + as.numeric(time, units = 'mins')
 }
 
 time
