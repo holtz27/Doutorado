@@ -1,13 +1,28 @@
 source( 'https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R' )
+source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
+source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/cobal/source/waic.R')
+source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
+
 # Compilando o modelo Stan
-model_stan1 = rstan::stan_model(file = 'tvp_svm.stan')
-model_stan2 = rstan::stan_model(file = 'classic_tvp_svm.stan')
-model_stan3 = rstan::stan_model(file = 'pcp_tvp_svm.stan')
+dir = paste0(getwd(), '/Doutorado/Eventos/cobal/modelos/')
+path = paste0(dir, 'static.stan')
+model_stan1 = rstan::stan_model(file = path)
+path = paste0(dir, 'ig.stan')
+model_stan2 = rstan::stan_model(file = path)
+path = paste0(dir, 'pcp.stan')
+model_stan3 = rstan::stan_model(file = path)
+path = paste0(dir, 'exp.stan')
+model_stan4 = rstan::stan_model(file = path)
 
 U = invgamma::qinvgamma(0.975, shape = 4.5, rate = 0.065)
 lambda = -log(0.025) / sqrt( U )
 
-summary = list() 
+summary = list('static', 'ig', 'pcp', 'exp')
+waic.criterion = matrix(0, nrow = 1, ncol = 4)
+colnames( waic.criterion ) = c('static', 'ig', 'pcp', 'exp')
+
+warmup = 1e3
+iter = 2e3
 
 for( i in 1:1 ){
   # fitting model1
@@ -15,130 +30,139 @@ for( i in 1:1 ){
                           data = list(T = length( log.ret ), 
                                       y = as.numeric( log.ret )
                           ),
-                          chains = 4,
-                          warmup = 2e3,
-                          iter = 2e3 + 500,
-                          cores = 4
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1
   )
-  x = rstan::extract( draws )
-  draws_b = x$b
-  draws_mu = x$mu
-  draws_phi = x$phi
-  draws_s2_h = x$s2_h
-  draws_a1 = x$a1
-  theta = matrix( draws_b, nrow = 1 )
-  theta = rbind( theta, draws_mu )
-  theta = rbind( theta, draws_phi )
-  theta = rbind( theta, draws_s2_h )
-  theta = rbind( theta, draws_a1 )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$a)
+  summary$static = num_analisys(draws = theta, 
+                                  names = c('b', 
+                                            'mu', 
+                                            'phi_h', 
+                                            's_h', 
+                                            'a'),
+                                  digits = 4,
+                                  hdp = FALSE
+  )
   # Plots
-  pdf( 'tvp_traces.pdf', width = 20, height = 10 )
+  pdf( 'static.pdf', width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
-              names = c('b', 'mu', 'phi', 's2_h', 'a1') )
+              names = c('b', 'mu', 'phi', 's2_h', 'a') )
   dev.off()
-  # Numeric Analysis
-  summary[[1]] = rstan::summary( draws )$summary[c('b', 'mu', 'phi', 's2_h', 'a1'), 
-                                                 c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
+  WAIC = waic(data = log.ret, 
+              draws = rbind(x$b, t(x$h), x$a ),
+              dyn = FALSE)
+  waic.criterion[1] = WAIC$estimates['waic', 1]
   
   # fitting model2
   draws = rstan::sampling(model_stan2, 
                           data = list(T = length( log.ret ), 
                                       y = as.numeric( log.ret )
                           ),
-                          chains = 4,
-                          warmup = 2e3,
-                          iter = 2e3 + 500,
-                          cores = 4
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1
   )
-  x = rstan::extract( draws )
-  draws_b = x$b
-  draws_mu = x$mu
-  draws_phi = x$phi
-  draws_s2_h = x$s2_h
-  draws_a1 = x$a1
-  theta = matrix( draws_b, nrow = 1 )
-  theta = rbind( theta, draws_mu )
-  theta = rbind( theta, draws_phi )
-  theta = rbind( theta, draws_s2_h )
-  theta = rbind( theta, draws_a1 )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
+  # Numeric Analysis
+  summary$ig = num_analisys(draws = theta, 
+                            names = c('b', 
+                                      'mu', 
+                                      'phi_h', 
+                                      's_h', 
+                                      'ls_a'),
+                            digits = 4,
+                            hdp = FALSE
+  )
   # Plots
-  pdf( 'classic_traces.pdf', width = 20, height = 10 )
+  pdf( 'ig.pdf', width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
-              names = c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1') )
+              names = c('b', 'mu', 'phi', 's2_h', 'ls_a')
+              )
   dev.off()
-  # Numeric Analysis
-  summary[[2]] = rstan::summary( draws )$summary[c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1'), 
-                                                 c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
+  WAIC = waic(data = log.ret, 
+              draws = rbind(x$b, t(x$h), t(x$a)),
+              dyn = FALSE)
+  waic.criterion[ 2 ] = WAIC$estimates['waic', 1]
   
   # fitting model3
-  draws = rstan::sampling(model_stan, 
+  draws = rstan::sampling(model_stan3, 
                           data = list(T = length( log.ret ), 
                                       y = as.numeric( log.ret ),
                                       lambda = lambda
                                       ),
-                          chains = 4,
-                          warmup = 2e3,
-                          iter = 2e3 + 500,
-                          cores = 4
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1
   )
-  x = rstan::extract( draws )
-  draws_b = x$b
-  draws_mu = x$mu
-  draws_phi = x$phi
-  draws_s2_h = x$s2_h
-  draws_a1 = x$a1
-  theta = matrix( draws_b, nrow = 1 )
-  theta = rbind( theta, draws_mu )
-  theta = rbind( theta, draws_phi )
-  theta = rbind( theta, draws_s2_h )
-  theta = rbind( theta, draws_a1 )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
+  # Numeric Analysis
+  summary$pcp = num_analisys(draws = theta, 
+                             names = c('b', 
+                                       'mu', 
+                                       'phi_h', 
+                                       's_h', 
+                                       'ls_a'),
+                             digits = 4,
+                             hdp = FALSE
+  )
   # Plots
-  pdf( 'pcp_traces.pdf', width = 20, height = 10 )
+  pdf( 'pcp.pdf', width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
-              names = c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1') )
+              names = c('b', 'mu', 'phi', 's2_h', 'ls_a') )
   dev.off()
+  WAIC = waic(data = log.ret, 
+              draws = rbind(x$b, t(x$h), t(x$a)),
+              dyn = FALSE)
+  waic.criterion[ 3 ] = WAIC$estimates['waic', 1]
+  
+  # fitting model3
+  draws = rstan::sampling(model_stan4, 
+                          data = list(T = length( log.ret ), 
+                                      y = as.numeric( log.ret )
+                                      ),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1
+  )
+  x = rstan::extract(draws)
+  theta = matrix(x$b, nrow = 1)
+  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a)
   # Numeric Analysis
-  summary[[3]] = rstan::summary( draws )$summary[c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1'), 
-                                                 c('mean', '2.5%', '97.5%', 'n_eff', 'Rhat')]
+  summary$exp = num_analisys(draws = theta, 
+                             names = c('b', 
+                                       'mu', 
+                                       'phi_h', 
+                                       's_h', 
+                                       'ls_a'),
+                             digits = 4,
+                             hdp = FALSE
+  )
+  # Plots
+  pdf( 'exp.pdf', width = 20, height = 10 )
+  trace_plots(theta,
+              burn = 0, lags = 1,
+              names = c('b', 'mu', 'phi', 's2_h', 'ls_a') )
+  dev.off()
+  WAIC = waic(data = log.ret, 
+              draws = rbind(x$b, t(x$h), t(x$a)),
+              dyn = FALSE)
+  waic.criterion[ 4 ] = WAIC$estimates['waic', 1]
   
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+summary
+waic.criterion
