@@ -19,8 +19,9 @@ set.seed(1648723)
 T = 1e2
 b = 0.1
 mu = 0
-phi = 0.95 #0.95, 0.99
-sigma = 0.15 #0.1, 0.15
+# (phi, sigma) \in { (0.95, 0.15), (0.99, 0.1) }
+phi = 0.95 
+sigma = 0.15 
 xi = 0 # 0, 0.1, 0.25
 
 theta_vdd = matrix(c(mu, phi, sigma, xi), ncol = 1)
@@ -43,11 +44,11 @@ for(it in 1:M){
   time = Sys.time()
   
   #Data
-  y = h = a = matrix(0, nrow = T, ncol = 1)
+  y = h = a = matrix(0, nrow = (T + k), ncol = 1)
   a[1] = 0 
   h[1] = mu + (sigma / sqrt( (1 - phi * phi) )) * rnorm( 1 )
   y[1] = b + a[1] * exp( h[1] ) + exp( 0.5 * h[1] ) * rnorm( 1 )
-  for( t in 2:T ){
+  for( t in 2:(T + k) ){
     a[t] = a[t-1] + sqrt( xi ) * rnorm( 1 )
     h[t] = mu + phi * (h[t-1] - mu) + sigma * rnorm( 1 )
     y[t] = b + a[t] * exp( h[t] ) + exp( 0.5 * h[t] ) * rnorm( 1 )
