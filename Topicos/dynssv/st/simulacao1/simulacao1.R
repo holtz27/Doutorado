@@ -15,8 +15,8 @@ model_stan2 = rstan::stan_model(file = path)
 path = paste0( dir, '/dynssv_st3.stan')
 model_stan3 = rstan::stan_model(file = path)
 
-#set.seed(164872)
-T = 1e2
+set.seed(1648723)
+T = 1e3
 # log-volatility
 mu_h = 0
 phi_h = 0.99
@@ -24,7 +24,7 @@ sigma_h = 0.1
 # dynskew
 mu_a = 0
 phi_a = 0.99
-sigma_a = 0.01
+sigma_a = 0.1
 v = 10
 
 theta_vdd = matrix(c(mu_h, phi_h, sigma_h,
@@ -34,31 +34,31 @@ theta_vdd = matrix(c(mu_h, phi_h, sigma_h,
 summary1 = summary2 = summary3 = list()
 Time = 0
 
-M = 10
-m = 1
+M = 100
+m = 4
 saver = M / m
 
 k = 5
 err1 = err2 = err3 = matrix(nrow = k, ncol = M)
 
-warmup = 2.5e2
-iters = 1e2
+warmup = 3e3
+iters = 1e3
 
 for(it in 1:M){
   if( (M %% m) != 0 ) stop('M precisar ser divisivel por m!')
   time = Sys.time()
   
-  cat( '\014' )
-  cat('Réplica: ', it, '/', M, '\n', '\n')
-  if( it == 1 ){
-    cat('Tempo restante total estimado: Calculando...', '\n' )
-  }else{
-    cat('Tempo restante total estimado: ', 
-        round((M - it + 1) * (Time / (it-1)), 1), 'mins',
-        '\n' )
-  }
-  
-  #Data
+  #cat( '\014' )
+  #cat('Réplica: ', it, '/', M, '\n', '\n')
+  #if( it == 1 ){
+  #  cat('Tempo restante total estimado: Calculando...', '\n' )
+  #}else{
+  #  cat('Tempo restante total estimado: ', 
+  #      round((M - it + 1) * (Time / (it-1)), 1), 'hs',
+  #      '\n' )
+  #}
+  #####
+  # Data
   a = delta = omega = rep(0 , T + k)
   a[1] = mu_a + sigma_a / sqrt( 1 - phi_a * phi_a ) * rnorm(1)
   for(t in 2:(T + k)) a[t] = mu_a + phi_a * (a[t-1] - mu_a) + sigma_a * rnorm(1)
@@ -78,10 +78,21 @@ for(it in 1:M){
   
   y.train = y[1:T]
   h.test = matrix( h[(T + 1):(T + k)], ncol = 1 )
+  #####
   
   ### Sampling1
-  test = 1
-  while( test > 0 ){
+  test = tent = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    cat( '\014' )
+    cat('Réplica: ', it, '/', M, '\n', '\n')
+    if( it == 1 ){
+      cat('Tempo restante total estimado: Calculando...', '\n', '\n' )
+    }else{
+      cat('Tempo restante total estimado: ', 
+          round((M - it + 1) * (Time / (it-1)), 1), 'hs',
+          '\n', '\n' )
+    }
+    cat( 'Modelo 1, tentetiva ', tent, '\n', '\n' )
     draws = rstan::sampling(model_stan1, 
                             data = list(T = length( y.train ), 
                                         y = as.numeric( y.train ),
@@ -103,7 +114,8 @@ for(it in 1:M){
                      digits = 4,
                      hdp = TRUE
     )
-    test = sum( abs( s[ , 'CD'] ) > 1.96 ) 
+    test = sum( abs( s[ , 'CD'] ) > 1.96 )
+    tent = tent + 1
   }
   summary1[[ it ]] = s
   h_new = forecast.vol(h_T = apply(x$h, MARGIN = 1, tail, 1),
@@ -113,10 +125,21 @@ for(it in 1:M){
                        k = k
                       )$h_new
   err1[, it] = exp( h_new ) - exp( h.test ) 
+  cat( '\014' )
   
   ### Sampling2
-  test = 1
-  while( test > 0 ){
+  test = tent = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    cat( '\014' )
+    cat('Réplica: ', it, '/', M, '\n', '\n')
+    if( it == 1 ){
+      cat('Tempo restante total estimado: Calculando...', '\n', '\n' )
+    }else{
+      cat('Tempo restante total estimado: ', 
+          round((M - it + 1) * (Time / (it-1)), 1), 'hs',
+          '\n', '\n' )
+    }
+    cat( 'Modelo 2, tentetiva ', tent, '\n', '\n' )
     draws = rstan::sampling(model_stan2, 
                             data = list(T = length( y.train ), 
                                         y = as.numeric( y.train ),
@@ -139,6 +162,7 @@ for(it in 1:M){
                      hdp = TRUE
     )
     test = sum( abs( s[ , 'CD'] ) > 1.96 )
+    tent = tent + 1
   }
   summary2[[ it ]] = s
   h_new = forecast.vol(h_T = apply(x$h, MARGIN = 1, tail, 1),
@@ -148,11 +172,21 @@ for(it in 1:M){
                        k = k
   )$h_new
   err2[, it] = exp( h_new ) - exp( h.test )
-  
+  cat( '\014' )
   
   ### Sampling3
-  test = 1
-  while( test > 0 ){
+  test = tent = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    cat( '\014' )
+    cat('Réplica: ', it, '/', M, '\n', '\n')
+    if( it == 1 ){
+      cat('Tempo restante total estimado: Calculando...', '\n', '\n' )
+    }else{
+      cat('Tempo restante total estimado: ', 
+          round((M - it + 1) * (Time / (it-1)), 1), 'hs',
+          '\n', '\n' )
+    }
+    cat( 'Modelo 3, tentetiva ', tent, '\n', '\n' )
     draws = rstan::sampling(model_stan3, 
                             data = list(T = length( y.train ), 
                                         y = as.numeric( y.train ),
@@ -175,6 +209,7 @@ for(it in 1:M){
                      hdp = TRUE
     )
     test = sum( abs( s[ , 'CD'] ) > 1.96 )
+    tent = tent + 1
   }
   summary3[[ it ]] = s
   h_new = forecast.vol(h_T = apply(x$h, MARGIN = 1, tail, 1),
@@ -195,13 +230,17 @@ for(it in 1:M){
           err1,
           err2,
           err3,
-          file = 'simulacao_sa_0.01.RData'
+          file = 'simulacao_sa_0.1.RData'
           )
     saver = saver + M / m
     
   }
   time = Sys.time() - time
-  Time = Time + as.numeric(time, units = 'mins')
+  Time = Time + as.numeric(time, units = 'hours')
 }
 
 Time
+
+
+
+
