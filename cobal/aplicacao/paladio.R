@@ -1,22 +1,22 @@
-# Obtenha os dados do ouro
-ouro = quantmod::getSymbols('GC=F', 
-                            src = 'yahoo', 
-                            from = '2006-01-01', to = '2018-04-04',
-                            auto.assign = FALSE)
-ouro = na.omit( ouro )
-ouro = data.frame( ouro )
-dates = as.Date( row.names( ouro ), '%Y-%m-%d' )
-ouro = ouro[, 'GC.F.Adjusted']
-#View(ouro)
-T = length( ouro )
-log.ret = 100 * ( log( ouro[2:T] ) - log( ouro[1:(T-1)] ) )
+# Obtenha os dados do paladio
+paladio = quantmod::getSymbols('PA=F', 
+                               src = "yahoo", 
+                               from = "2005-07-20", to = "2017-07-20",
+                               auto.assign = FALSE)
+paladio = na.omit( paladio )
+paladio = data.frame( paladio )
+dates = as.Date( row.names( paladio ), "%Y-%m-%d" )
+paladio = paladio[, 'PA.F.Adjusted']
+#View(paladio)
+T = length( paladio )
+log.ret = 100 * ( log( paladio[2:T] ) - log( paladio[1:(T-1)] ) )
 T = length( log.ret )
 # Plots
 library(ggplot2)
-df = data.frame( Retorno = log.ret, Tempo = dates[-1] )
+df = data.frame( Retorno = log.ret, Tempo = 1:T ) #Tempo = dates[-1]
 
 g = ggplot(df) + geom_line(aes(x = Tempo, y = Retorno))
-g = g + scale_x_date(date_breaks = "36 month", date_labels = "%b %Y")
+#g = g + scale_x_date(date_breaks = "48 month", date_labels = "%b %Y")
 g = g + theme_test() + theme(axis.title.y = element_text(size = 18),
                              axis.text.x = element_text(size = 16),
                              axis.text.y = element_text(size = 18))

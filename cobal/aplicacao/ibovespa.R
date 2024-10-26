@@ -1,22 +1,18 @@
-# Obtenha os dados do ouro
-ouro = quantmod::getSymbols('GC=F', 
-                            src = 'yahoo', 
-                            from = '2006-01-01', to = '2018-04-04',
-                            auto.assign = FALSE)
-ouro = na.omit( ouro )
-ouro = data.frame( ouro )
-dates = as.Date( row.names( ouro ), '%Y-%m-%d' )
-ouro = ouro[, 'GC.F.Adjusted']
-#View(ouro)
-T = length( ouro )
-log.ret = 100 * ( log( ouro[2:T] ) - log( ouro[1:(T-1)] ) )
+# Reading data
+ibovespa = read.csv('https://raw.githubusercontent.com/holtz27/svmsmn/main/aplica%C3%A7%C3%A3o/ibovespa/ibovespa.csv')
+ibovespa = ibovespa[, c('Date', 'Adj.Close')]
+ibovespa[, 2] = as.numeric( ibovespa[, 2] ) 
+ibovespa = na.omit(ibovespa)
+dates = as.Date( ibovespa[, 1], "%Y-%m-%d" )
+T = nrow(ibovespa)
+log.ret = 100 * ( log( ibovespa[2:T, 2] ) - log( ibovespa[1:(T-1), 2] ) )
 T = length( log.ret )
 # Plots
 library(ggplot2)
 df = data.frame( Retorno = log.ret, Tempo = dates[-1] )
 
 g = ggplot(df) + geom_line(aes(x = Tempo, y = Retorno))
-g = g + scale_x_date(date_breaks = "36 month", date_labels = "%b %Y")
+g = g + scale_x_date(date_breaks = "48 month", date_labels = "%b %Y")
 g = g + theme_test() + theme(axis.title.y = element_text(size = 18),
                              axis.text.x = element_text(size = 16),
                              axis.text.y = element_text(size = 18))
@@ -36,3 +32,36 @@ data_summary = matrix(c( mean( log.ret ),
                          moments::kurtosis( log.ret ) ), nrow = 1)
 colnames( data_summary ) = c( 'mean', 'sd', 'min', 'max', 'skewness', 'kurtosis')
 round( data_summary, digits = 4 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
