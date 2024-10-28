@@ -1,4 +1,4 @@
-VaR = function( h_T, theta_hmc, p = 0.95, k=1e3 ){
+svm_VaR = function( h_T, theta_hmc, p = 0.95, k=1e3 ){
   
   # theta = (b, mu, phi, sigma, a1)
   theta = theta_hmc
