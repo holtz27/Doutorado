@@ -14,8 +14,8 @@ model_stan3 = rstan::stan_model(file = path)
 path = paste0(dir, 'models/jeffrey.stan')
 model_stan4 = rstan::stan_model(file = path)
 
-# images directory
-dir_images = paste0( dir, 'aplication/images/cobre/' )
+# outs directory
+dir_out = paste0( dir, 'aplication/data/cobre/' )
 
 summary = list('static', 'ig', 'pcp', 'jeffrey')
 waic.criterion = matrix(0, nrow = 1, ncol = 4)
@@ -50,7 +50,7 @@ for( i in 1:1 ){
                                   hdp = FALSE
   )
   # Plots
-  pdf( paste0( dir_images, 'static.pdf'), 
+  pdf( paste0( dir_out, 'static.pdf'), 
        width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
@@ -90,7 +90,7 @@ for( i in 1:1 ){
                             hdp = FALSE
   )
   # Plots
-  pdf( paste0( dir_images, 'ig.pdf'), 
+  pdf( paste0( dir_out, 'ig.pdf'), 
        width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
@@ -98,7 +98,7 @@ for( i in 1:1 ){
               )
   dev.off()
   
-  pdf( paste0( dir_images, 'ig_a.pdf'), 
+  pdf( paste0( dir_out, 'ig_a.pdf'), 
        width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
   a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
@@ -144,14 +144,14 @@ for( i in 1:1 ){
                              hdp = FALSE
   )
   # Plots
-  pdf( paste0( dir_images, 'pcp.pdf'), 
+  pdf( paste0( dir_out, 'pcp.pdf'), 
        width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1') )
   dev.off()
   
-  pdf( paste0( dir_images, 'pcp_a.pdf'), 
+  pdf( paste0( dir_out, 'pcp_a.pdf'), 
        width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
   a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
@@ -195,14 +195,14 @@ for( i in 1:1 ){
                                  hdp = FALSE
   )
   # Plots
-  pdf( paste0( dir_images, 'jeffrey.pdf'), 
+  pdf( paste0( dir_out, 'jeffrey.pdf'), 
        width = 20, height = 10 )
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c('b', 'mu', 'phi', 's2_h', 'ls_a', 'a1') )
   dev.off()
   
-  pdf( paste0( dir_images, 'jeffrey_a.pdf'), 
+  pdf( paste0( dir_out, 'jeffrey_a.pdf' ), 
        width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
   a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
@@ -220,6 +220,13 @@ for( i in 1:1 ){
               dyn = FALSE)
   waic.criterion[ 4 ] = WAIC$estimates['waic', 1]
   
+  # Save
+  save(
+    summary, 
+    waic.criterion,
+    h_hat1, h_hat2, h_hat3, h_hat4,
+    file = paste0(dir_out, 'out.RData')
+       )  
 }
 
 summary
@@ -227,7 +234,7 @@ waic.criterion = rbind(waic.criterion,
                        as.numeric(waic.criterion[1, ] == min( waic.criterion)))
 waic.criterion
 
-# Volatilities
+# Figure Volatilities
 plot(dates[-1], abs(log.ret), 
      col = 'gray', 
      xlab = '', ylab = '|Return|',
