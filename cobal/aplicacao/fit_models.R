@@ -17,32 +17,34 @@ path = paste0(dir, 'models/exp.stan')
 model_stan5 = rstan::stan_model(file = path)
 
 # outs directory
-dir_out = paste0( dir, 'aplication/data/cobre/' )
+dir_out = paste0( dir, 'aplication/data/ouro/' )
 
 summary = list('static', 'ig', 'pcp', 'jeffrey', 'exp')
 waic.criterion = matrix(0, nrow = 1, ncol = 5)
 colnames( waic.criterion ) = c('static', 'ig', 'pcp', 'jeffrey', 'exp')
 
-warmup = 1e2
+warmup = 2e1
 iter = 1e1
 
 for( i in 1:1 ){
   ##################
   # fitting model1 #
   ##################
-  draws = rstan::sampling(model_stan1, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret )
-                          ),
-                          chains = 1,
-                          warmup = warmup,
-                          iter = warmup + iter,
-                          cores = 1
-  )
-  x = rstan::extract(draws)
-  theta = matrix(x$b, nrow = 1)
-  theta = rbind(theta, x$mu, x$phi, x$s_h, x$a)
-  summary$static = num_analisys(draws = theta, 
+  test = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    draws = rstan::sampling(model_stan1, 
+                            data = list(T = length( log.ret ), 
+                                        y = as.numeric( log.ret )
+                            ),
+                            chains = 1,
+                            warmup = warmup,
+                            iter = warmup + iter,
+                            cores = 1
+    )
+    x = rstan::extract(draws)
+    theta = matrix(x$b, nrow = 1)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$a)
+    summary$static = num_analisys(draws = theta, 
                                   names = c('b', 
                                             'mu', 
                                             'phi_h', 
@@ -50,7 +52,9 @@ for( i in 1:1 ){
                                             'a'),
                                   digits = 4,
                                   hdp = FALSE
-  )
+    )
+    test = sum( abs( summary$static[ , 'CD'] ) > 1.96 )
+  }
   # Plots
   pdf( paste0( dir_out, 'static.pdf'), 
        width = 20, height = 10 )
@@ -68,29 +72,33 @@ for( i in 1:1 ){
   ##################
   # fitting model2 #
   ##################
-  draws = rstan::sampling(model_stan2, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret )
-                          ),
-                          chains = 1,
-                          warmup = warmup,
-                          iter = warmup + iter,
-                          cores = 1
-  )
-  x = rstan::extract(draws)
-  theta = matrix(x$b, nrow = 1)
-  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
-  # Numeric Analysis
-  summary$ig = num_analisys(draws = theta, 
-                            names = c('b', 
-                                      'mu', 
-                                      'phi_h', 
-                                      's_h', 
-                                      'ls_a',
-                                      'a1'),
-                            digits = 4,
-                            hdp = FALSE
-  )
+  test = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    draws = rstan::sampling(model_stan2, 
+                            data = list(T = length( log.ret ), 
+                                        y = as.numeric( log.ret )
+                            ),
+                            chains = 1,
+                            warmup = warmup,
+                            iter = warmup + iter,
+                            cores = 1
+    )
+    x = rstan::extract(draws)
+    theta = matrix(x$b, nrow = 1)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
+    # Numeric Analysis
+    summary$ig = num_analisys(draws = theta, 
+                              names = c('b', 
+                                        'mu', 
+                                        'phi_h', 
+                                        's_h', 
+                                        'ls_a',
+                                        'a1'),
+                              digits = 4,
+                              hdp = FALSE
+    )
+    test = sum( abs( summary$ig[ , 'CD'] ) > 1.96 )
+  }
   # Plots
   pdf( paste0( dir_out, 'ig.pdf'), 
        width = 20, height = 10 )
@@ -121,30 +129,35 @@ for( i in 1:1 ){
   ##################
   # fitting model3 #
   ##################
-  draws = rstan::sampling(model_stan3, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret ),
-                                      lambda = -log(0.5) / sqrt(0.5)
-                                      ),
-                          chains = 1,
-                          warmup = warmup,
-                          iter = warmup + iter,
-                          cores = 1
-  )
-  x = rstan::extract(draws)
-  theta = matrix(x$b, nrow = 1)
-  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
-  # Numeric Analysis
-  summary$pcp = num_analisys(draws = theta, 
-                             names = c('b', 
-                                       'mu', 
-                                       'phi_h', 
-                                       's_h', 
-                                       'ls_a',
-                                       'a1'),
-                             digits = 4,
-                             hdp = FALSE
-  )
+  test = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    draws = rstan::sampling(model_stan3, 
+                            data = list(T = length( log.ret ), 
+                                        y = as.numeric( log.ret ),
+                                        lambda = -log(0.5) / sqrt(0.5)
+                            ),
+                            chains = 1,
+                            warmup = warmup,
+                            iter = warmup + iter,
+                            cores = 1
+    )
+    x = rstan::extract(draws)
+    theta = matrix(x$b, nrow = 1)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
+    # Numeric Analysis
+    summary$pcp = num_analisys(draws = theta, 
+                               names = c('b', 
+                                         'mu', 
+                                         'phi_h', 
+                                         's_h', 
+                                         'ls_a',
+                                         'a1'),
+                               digits = 4,
+                               hdp = FALSE
+    )
+    test = sum( abs( summary$pcp[ , 'CD'] ) > 1.96 )
+  }
+  
   # Plots
   pdf( paste0( dir_out, 'pcp.pdf'), 
        width = 20, height = 10 )
@@ -173,29 +186,33 @@ for( i in 1:1 ){
   ##################
   # fitting model4 #
   ##################
-  draws = rstan::sampling(model_stan4, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret )
-                                      ),
-                          chains = 1,
-                          warmup = warmup,
-                          iter = warmup + iter,
-                          cores = 1
-  )
-  x = rstan::extract(draws)
-  theta = matrix(x$b, nrow = 1)
-  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
-  # Numeric Analysis
-  summary$jeffrey = num_analisys(draws = theta, 
-                                 names = c('b', 
-                                           'mu', 
-                                           'phi_h', 
-                                           's_h', 
-                                           'ls_a',
-                                           'a1'),
-                                 digits = 4,
-                                 hdp = FALSE
-  )
+  test = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    draws = rstan::sampling(model_stan4, 
+                            data = list(T = length( log.ret ), 
+                                        y = as.numeric( log.ret )
+                            ),
+                            chains = 1,
+                            warmup = warmup,
+                            iter = warmup + iter,
+                            cores = 1
+    )
+    x = rstan::extract(draws)
+    theta = matrix(x$b, nrow = 1)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
+    # Numeric Analysis
+    summary$jeffrey = num_analisys(draws = theta, 
+                                   names = c('b', 
+                                             'mu', 
+                                             'phi_h', 
+                                             's_h', 
+                                             'ls_a',
+                                             'a1'),
+                                   digits = 4,
+                                   hdp = FALSE
+    )
+    test = sum( abs( summary$jeffrey[ , 'CD'] ) > 1.96 )
+  }
   # Plots
   pdf( paste0( dir_out, 'jeffrey.pdf'), 
        width = 20, height = 10 )
@@ -225,29 +242,32 @@ for( i in 1:1 ){
   ##################
   # fitting model5 #
   ##################
-  draws = rstan::sampling(model_stan5, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret )
-                          ),
-                          chains = 1,
-                          warmup = warmup,
-                          iter = warmup + iter,
-                          cores = 1
-  )
-  x = rstan::extract(draws)
-  theta = matrix(x$b, nrow = 1)
-  theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
-  # Numeric Analysis
-  summary$exp = num_analisys(draws = theta, 
-                             names = c('b', 
-                                       'mu', 
-                                       'phi_h', 
-                                       's_h', 
-                                       'ls_a',
-                                       'a1'),
-                             digits = 4,
-                             hdp = FALSE
-  )
+  test = 1
+  while( test > 0 || is.na(test) || is.nan(test) ){
+    draws = rstan::sampling(model_stan5, 
+                            data = list(T = length( log.ret ), 
+                                        y = as.numeric( log.ret )
+                            ),
+                            chains = 1,
+                            warmup = warmup,
+                            iter = warmup + iter,
+                            cores = 1
+    )
+    x = rstan::extract(draws)
+    theta = matrix(x$b, nrow = 1)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
+    # Numeric Analysis
+    summary$exp = num_analisys(draws = theta, 
+                               names = c('b', 
+                                         'mu', 
+                                         'phi_h', 
+                                         's_h', 
+                                         'ls_a',
+                                         'a1'),
+                               digits = 4,
+                               hdp = FALSE
+    )
+  }
   # Plots
   pdf( paste0( dir_out, 'exp.pdf'), 
        width = 20, height = 10 )
