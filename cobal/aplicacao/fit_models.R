@@ -238,15 +238,15 @@ for( i in 1:1 ){
   theta = matrix(x$b, nrow = 1)
   theta = rbind(theta, x$mu, x$phi, x$s_h, x$ls_a, x$a1)
   # Numeric Analysis
-  summary$jeffrey = num_analisys(draws = theta, 
-                                 names = c('b', 
-                                           'mu', 
-                                           'phi_h', 
-                                           's_h', 
-                                           'ls_a',
-                                           'a1'),
-                                 digits = 4,
-                                 hdp = FALSE
+  summary$exp = num_analisys(draws = theta, 
+                             names = c('b', 
+                                       'mu', 
+                                       'phi_h', 
+                                       's_h', 
+                                       'ls_a',
+                                       'a1'),
+                             digits = 4,
+                             hdp = FALSE
   )
   # Plots
   pdf( paste0( dir_out, 'exp.pdf'), 
