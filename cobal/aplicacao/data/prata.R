@@ -1,7 +1,7 @@
 # Obtenha os dados do prata
 prata = quantmod::getSymbols('SI=F', 
                             src = "yahoo", 
-                            from = "2005-07-20", to = "2017-07-20",
+                            from = '2010-01-01', to = '2020-06-04',
                             auto.assign = FALSE)
 prata = na.omit( prata )
 prata = data.frame( prata )

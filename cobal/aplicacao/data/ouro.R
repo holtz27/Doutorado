@@ -1,7 +1,7 @@
 # Obtenha os dados do ouro
 ouro = quantmod::getSymbols('GC=F', 
                             src = 'yahoo', 
-                            from = '2006-01-01', to = '2018-04-04',
+                            from = '2010-01-01', to = '2020-06-04',
                             auto.assign = FALSE)
 ouro = na.omit( ouro )
 ouro = data.frame( ouro )
@@ -13,15 +13,15 @@ log.ret = 100 * ( log( ouro[2:T] ) - log( ouro[1:(T-1)] ) )
 T = length( log.ret )
 # Plots
 library(ggplot2)
-df = data.frame( Retorno = log.ret, Tempo = dates[-1] )
+df = data.frame( Return = log.ret, Tempo = dates[-1] )
 
-g = ggplot(df) + geom_line(aes(x = Tempo, y = Retorno))
+g = ggplot(df) + geom_line(aes(x = Tempo, y = Return))
 g = g + scale_x_date(date_breaks = "36 month", date_labels = "%b %Y")
 g = g + theme_test() + theme(axis.title.y = element_text(size = 18),
                              axis.text.x = element_text(size = 16),
                              axis.text.y = element_text(size = 18))
 g = g + xlab('')
-h = ggplot( df, aes(Retorno) )
+h = ggplot( df, aes(Return) )
 h = h + geom_histogram(aes(y = after_stat(density)), bins = 40, color = 'white')
 h = h + theme_test() + ylab('')
 h = h + theme_test() + theme(axis.title.x = element_text(size = 18),
@@ -35,4 +35,6 @@ data_summary = matrix(c( mean( log.ret ),
                          moments::skewness( log.ret ),
                          moments::kurtosis( log.ret ) ), nrow = 1)
 colnames( data_summary ) = c( 'mean', 'sd', 'min', 'max', 'skewness', 'kurtosis')
-round( data_summary, digits = 4 )
+round( data_summary, digits = 3 )
+
+
