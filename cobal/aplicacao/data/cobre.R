@@ -1,7 +1,7 @@
 # Obtenha os dados do cobre
 cobre = quantmod::getSymbols('HG=F', 
                              src = "yahoo", 
-                             from = "2005-07-20", to = "2017-07-20",
+                             from = '2010-01-01', to = '2020-06-04',
                              auto.assign = FALSE)
 cobre = na.omit( cobre )
 cobre = data.frame( cobre )

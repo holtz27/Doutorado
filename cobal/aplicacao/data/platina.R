@@ -1,7 +1,7 @@
 # Obtenha os dados do platina
 platina = quantmod::getSymbols('PL=F', 
                              src = "yahoo", 
-                             from = "2005-07-20", to = "2017-07-20",
+                             from = '2010-01-01', to = '2020-06-04',
                              auto.assign = FALSE)
 platina = na.omit( platina )
 platina = data.frame( platina )
