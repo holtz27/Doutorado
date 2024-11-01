@@ -1,6 +1,7 @@
 data {
   int<lower=0> T;
   vector[T] y;
+  real a1;
 }
 parameters{
   real b;
@@ -9,7 +10,7 @@ parameters{
   real<lower=0> s_h;             
   real<lower=0> s_a;
   vector[T] h_std; 
-  real a1;
+  //real a1;
   vector[T] a_std;
   real<lower=0> k;
 }
@@ -41,10 +42,10 @@ model {
   mu ~ normal( 0, sqrt(10) );
   phiT ~ beta( 20, 1.5 );
   s2_h ~ inv_gamma( 2.5, 0.025 );
-  a1 ~ normal( 0, sqrt(10) );
+  //a1 ~ normal( 0, sqrt(10) );
   
   // Exp
-  k ~ gamma( 10.145, 10 );
+  k ~ gamma( 0.7864, 0.5 );
   s_a ~ exponential( k );
   
   // model

@@ -2,6 +2,7 @@ data {
   int<lower=0> T;
   vector[T] y;
   real<lower=0> lambda;
+  real a1;
 }
 parameters{
   real b;
@@ -10,7 +11,7 @@ parameters{
   real<lower=0> s_h;             
   real<lower=0> s_a;
   vector[T] h_std; 
-  real a1;
+  //real a1;
   vector[T] a_std;
 }
 transformed parameters{
@@ -35,17 +36,17 @@ transformed parameters{
     mu_t[t] = b + a[t] * exp( h[t] );
   }
 }
-model {
-  // Prioris
+model{
+  // Priors
   b ~ normal( 0, sqrt(10) );
   mu ~ normal( 0, sqrt(10) );
   phiT ~ beta( 20, 1.5 );
   s2_h ~ inv_gamma( 2.5, 0.025 );
-  a1 ~ normal( 0, sqrt(10) );
+  //a1 ~ normal( -0.1, 1 );
   
-  // PC priori
+  // PCP
   s2_a ~ weibull( 0.5, pow(lambda, -2 ) );
-
+  
   // model
   h_std ~ std_normal();
   a_std ~ std_normal();
