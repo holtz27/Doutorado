@@ -137,5 +137,5 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
 stopCluster( cl )
 result
 
-#save( result, file = paste0( out.dir, '/simulacao_xi_', xi, '.RData') )
+#save( result, theta_vdd, file = paste0( out.dir, '/simulacao_xi_', xi, '.RData') )
 
