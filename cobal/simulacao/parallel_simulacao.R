@@ -21,7 +21,7 @@ phi = 0.95
 sigma = 0.225
 xi = 0.05 # 0, 0.005, 0.05
 a1 = -0.1
-theta_vdd = matrix(c(b, mu, phi, sigma, xi), ncol = 1)
+theta_vdd = matrix(c(b, mu, phi, sigma, sqrt(xi), a1), ncol = 1)
 
 M = 100
 k = 5
