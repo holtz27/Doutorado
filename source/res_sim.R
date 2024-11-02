@@ -26,7 +26,7 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
       err[ ,i ] = ( matrix(s[[ i ]][, 1], ncol = 1) - theta_vdd ) / theta
       # prob cob
       l1 = as.numeric( s[[ i ]][, 3] < theta_vdd )
-      l2 = as.numeric( s[[ i ]][, 4] > theta_vdd )
+      l2 = as.numeric( s[[ i ]][, 5] > theta_vdd )
       prob.piv = matrix( round( 0.5 * (l1 + l2), 0 ), ncol = 1)
       prob.cob = prob.cob + prob.piv
     }
