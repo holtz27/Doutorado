@@ -36,7 +36,7 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
   Data = cbind( matrix( apply( err, MARGIN = 1, mean ), ncol = 1 ),
                 matrix( apply( err^2, MARGIN = 1, mean ), ncol = 1 ),
                 prob.cob / conv )
-  row.names( Data ) = c('mu_h', 'phi_h', 's_h', 'mu_a', 'phi_a', 'ls_a', 'v')
+  #row.names( Data ) = c('mu_h', 'phi_h', 's_h', 'mu_a', 'phi_a', 'ls_a', 'v')
   colnames( Data ) = c('vies', 'reqm', 'prob.cob')
   
   return( list( resumo = round(x1 / conv, digits), 
