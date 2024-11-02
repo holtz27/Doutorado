@@ -19,7 +19,7 @@ mu = -1
 # (phi, sigma) \in { (0.95, 0.225), (0.99, 0.1) }
 phi = 0.95 
 sigma = 0.225
-xi = 0.00 # 0, 0.005, 0.05
+xi = 0.05 # 0, 0.005, 0.05
 a1 = -0.1
 theta_vdd = matrix(c(b, mu, phi, sigma, xi), ncol = 1)
 
@@ -71,11 +71,11 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
                             cores = 1
     )
     #x = rstan::extract(draws)
-    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h') )
+    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h', 'a1') )
     theta = matrix(x$b, nrow = 1)
-    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a, x$a1)
     s = num_analisys(draws = theta, 
-                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a'),
+                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'a1'),
                      digits = 4,
                      hdp = TRUE
     )
@@ -105,11 +105,11 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
                             cores = 1
     )
     #x = rstan::extract(draws)
-    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h') )
+    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h', 'a1') )
     theta = matrix(x$b, nrow = 1)
-    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a)
+    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a, x$a1)
     s = num_analisys(draws = theta, 
-                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a'),
+                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'a1'),
                      digits = 4,
                      hdp = TRUE
     )
