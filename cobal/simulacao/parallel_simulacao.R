@@ -2,18 +2,18 @@ library( doParallel )
 
 source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/cobal/source/forecast_vol.R')
-model.dir = paste0('C:/Users/8936381/Documents/Doutorado/Eventos/cobal/models')
+model.dir = paste0('C:/Users/8936381/Documents/cobal/models')
 path = paste0( model.dir, '/ig.stan')
 model_stan1 = rstan::stan_model(file = path)
 path = paste0(model.dir, '/pcp.stan')
 model_stan2 = rstan::stan_model(file = path)
 
-out.dir = 'C:/Users/8936381/Documents/Doutorado/Eventos/cobal/simulation'
+out.dir = 'C:/Users/8936381/Documents/cobal/simulation'
 
 
 seed = sample(1:1e6, 1)
 set.seed( seed ) 
-T = 2e2
+T = 2e3
 b = 0.1
 mu = -1
 # (phi, sigma) \in { (0.95, 0.225), (0.99, 0.1) }
@@ -21,15 +21,15 @@ phi = 0.95
 sigma = 0.225
 xi = 0.00 # 0, 0.005, 0.05
 a1 = -0.1
-theta_vdd = matrix(c(mu, phi, sigma, xi), ncol = 1)
+theta_vdd = matrix(c(b, mu, phi, sigma, xi), ncol = 1)
 
-M = 3
+M = 100
 k = 5
 err1 = err2 = matrix(nrow = k, ncol = M)
 lambda = -log( 0.5 ) / sqrt( 0.5 )
 
-warmup = 2e2
-iters = 1e2
+warmup = 2e3
+iters = 1e3
 
 num_cores = detectCores() - 1
 cl = makeCluster( num_cores )
@@ -135,7 +135,5 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
 }
 
 stopCluster( cl )
-result
 
-#save( result, theta_vdd, file = paste0( out.dir, '/simulacao_xi_', xi, '.RData') )
-
+save( result, theta_vdd, file = paste0( out.dir, '/sim_xi_', xi, '.RData') )
