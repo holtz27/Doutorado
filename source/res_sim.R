@@ -1,4 +1,4 @@
-res.sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
+res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
   
   T = length( s )
   conv = T
