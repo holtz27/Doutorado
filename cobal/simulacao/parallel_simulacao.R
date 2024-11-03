@@ -136,4 +136,12 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
 
 stopCluster( cl )
 
-save( result, theta_vdd, file = paste0( out.dir, '/sim_xi_', xi, '.RData') )
+save( result, theta_vdd, seed,
+      file = paste0( out.dir, 
+                     '/sim_xi_', xi, '_', phi, '_', sigma, 
+                     '.RData') 
+    )
+
+elap = 0
+for(i in 1:M) elap = elap + result[[ i ]]$time
+as.numeric( elap, 'hours' ) / num_cores
