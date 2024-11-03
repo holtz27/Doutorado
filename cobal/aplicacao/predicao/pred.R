@@ -6,7 +6,7 @@ source( 'https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/cob
 source( 'https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R' )
 
 # compiling Stan model
-dir = paste0(getwd(), '/Doutorado/Eventos/cobal/')
+dir = paste0(getwd(), '/cobal/')
 path = paste0(dir, 'models/static.stan')
 model_stan1 = rstan::stan_model(file = path)
 path = paste0(dir, 'models/ig.stan')
@@ -19,16 +19,16 @@ path = paste0(dir, 'models/exp.stan')
 model_stan5 = rstan::stan_model(file = path)
 
 # outs directory
-dir_out = paste0( dir, 'aplication/data/cobre/' )
+dir_out = paste0( dir, 'aplication/pred/ouro/' )
 
-horizon = 1
+horizon = 120
 VaR_hat1 = VaR_hat2 = VaR_hat3 = VaR_hat4 = VaR_hat5 = rep(0, horizon)
 lpds.star1 = lpds.star2 = lpds.star3 = lpds.star4 = lpds.star5 = rep(0, horizon)
 summary1 = summary2 = summary3 = summary4 = summary5 = list()
 Time = 0
 
-warmup = 2e1
-iters = 1e1
+warmup = 2e3
+iters = 1e3
 
 for(it in 1:horizon){
   
