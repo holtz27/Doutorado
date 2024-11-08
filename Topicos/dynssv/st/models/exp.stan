@@ -2,6 +2,8 @@ data {
   int<lower=0> T;
   vector[T] y;
   real<lower=0> lambda1;
+  real<lower=0> c;
+  real<lower=0> d;
 }
 parameters{
   real mu;
@@ -55,7 +57,7 @@ model {
   
   // Prioris a
   a1 ~ normal(0, sqrt(10));
-  k ~ gamma( 0.1, 0.1 );
+  k ~ gamma( c, d );
   s_a ~ exponential( 1 / k );
   target += - lambda1 * sqrt(1 - phi_a) - 0.5 * log(1 - phi_a);
   
