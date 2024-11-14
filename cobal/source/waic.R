@@ -4,8 +4,8 @@ waic = function(data, mut, st){
   M = matrix(nrow = dim(mut)[1], ncol = n)
   for(j in 1:n){
     M[, j] = dnorm(y[j], 
-                   mean = mut[, 1], 
-                   sd = st[, 1], 
+                   mean = mut[, j], 
+                   sd = st[, j], 
                    log = TRUE)
   }
   return(loo::waic(M))
