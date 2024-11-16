@@ -46,7 +46,7 @@ quantile <- function(x, weights, probs){
   return(quantiles)
 }
 fillallprobs.vg  <- function(x,beg,beta,nu,y){
-  return((1/beg)*pdf_vg((x)/beg,0.0,1.0,nu))
+  return((1/beg)*pdf_vg((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu))
 }
 svmvg.mllk <-function(parvect,y,y0,m,gmax){
   ny <- length(y)
