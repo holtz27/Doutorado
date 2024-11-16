@@ -4,7 +4,7 @@ library("Rcpp")
 library("RcppArmadillo")
 library('mvtnorm')
 #setwd('C:/Users/8936381/Documents/Doutorado/Projeto Doc/HMMCodes/SVMTHMM')
-sourceCpp("mLogLk.cpp")
+sourceCpp("mLogLk_Rcpp.cpp")
 sourceCpp("pdf_vg.cpp")
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
