@@ -7,7 +7,7 @@ using namespace Rcpp;
 #include <time.h>
 
 // [[Rcpp::export]]
-double mlogLn_Rcpp(arma::mat allprobs, arma::mat egamma, arma::rowvec foo, int n)
+double mlogLk_Rcpp(arma::mat allprobs, arma::mat egamma, arma::rowvec foo, int n)
 {
   double lscale=0;
   int i=0;
