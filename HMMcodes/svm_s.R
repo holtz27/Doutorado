@@ -4,7 +4,7 @@ library("Rcpp")
 library("RcppArmadillo")
 library(mvtnorm)
 sourceCpp("svs.cpp")
-sourceCpp("pdf_sl.cpp")
+sourceCpp("pdf_s.cpp")
 ################################################################################
 ssvm.sim<-function(mu,phi,sigma,nu,beta,y0,g_dim){
   
