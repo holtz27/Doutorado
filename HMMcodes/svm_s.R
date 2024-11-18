@@ -3,7 +3,7 @@ rm(list=ls(all=TRUE))
 library("Rcpp")
 library("RcppArmadillo")
 library(mvtnorm)
-sourceCpp("svs.cpp")
+sourceCpp("mlogLk_Rcpp.cpp")
 sourceCpp("pdf_s.cpp")
 ################################################################################
 ssvm.sim<-function(mu,phi,sigma,nu,beta,y0,g_dim){
@@ -25,7 +25,7 @@ ssvm.sim<-function(mu,phi,sigma,nu,beta,y0,g_dim){
   }
   return (list(y=y,h=h,l=l))
 }
-svms.pn2pw <- function(beta,mu,phi,sigma,nu){
+svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
   lbeta2<-log((1+beta[2])/(1-beta[2]))
   lbeta3<-beta[3]
@@ -37,7 +37,7 @@ svms.pn2pw <- function(beta,mu,phi,sigma,nu){
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
 }
-svms.pw2pn <- function(parvect){
+svm.pw2pn <- function(parvect){
   beta=array(0,dim=3)
   beta[1]= parvect[1]
   beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
@@ -50,11 +50,11 @@ svms.pw2pn <- function(parvect){
 }
 ## function that will be used to compute 'allprobs' in mllk below
 fillallprobs <- function(x,beg,beta,nu,y){
-  return((1/beg)*pdf_sl((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu))
+  return((1/beg)*pdf_s((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu))
 }
 svms.mllk <-function(parvect,y,y0,m,gmax){
   ny <- length(y)
-  p <- svms.pw2pn(parvect)
+  p <- svm.pw2pn(parvect)
   K= m+1
   b=seq(-gmax,gmax,length=K) 
   bs=(b[-1]+b[-K])*0.5
@@ -71,7 +71,7 @@ svms.mllk <-function(parvect,y,y0,m,gmax){
   allprobs <- outer(xx,sey,"fillallprobs",beta=p$beta,nu=p$nu,yy)
   delta <-dnorm(bs,p$mu,p$sigma/sqrt(1-p$phi^2))*intlen
   foo <- delta*allprobs[1,]
-  lscale = mlogLsl_Rcpp(allprobs,Gamma,foo,ny) #Rcpp function
+  lscale = mlogLk_Rcpp(allprobs,Gamma,foo,ny) #Rcpp function
   return(-lscale)
 }
 svms.prior <-function(parvect){
@@ -85,7 +85,7 @@ svms.posterior <-function(parvect,y,y0,m,gmax){
 }
 svsl.map<- function(y,m,mu0,phi0,sigma0,nu0,beta0,y0,gmax){
   time = Sys.time()
-  parvect <- svsl.pn2pw(beta=beta0,mu=mu0,phi=phi0,sigma=sigma0,nu=nu0)
+  parvect <- svm.pn2pw(beta=beta0,mu=mu0,phi=phi0,sigma=sigma0,nu=nu0)
   mod <- optim(parvect,svms.posterior,y=y,y0=y0,m=m,gmax=gmax,hessian=T)
   mode <- mod$par
   time = Sys.time()-time
@@ -110,7 +110,7 @@ quantile <- function(x, weights, probs){
 mu=0.1
 phi=0.98
 sigma=0.1
-beta=c(0.1,0.03,-0.1)
+beta=c(0.2,0.07,-0.18)
 nu=2
 y0=0.2
 g_dim=6000
@@ -123,17 +123,16 @@ mu0=0.5
 phi0=0.96
 sigma0=0.2
 nu0=2.5
-beta0=c(0.2,0.1,-0.2)
+beta0=c(0.5,0.1,-0.2)
 m=100
-gmax=3
-s1=2000
+gmax=4
+s1=1000
 ################################################################################
-#sp=Sys.time()
 res.svslp50s1_5<-svsl.map(simsvsl1$y[1:s1],m=m,
                           mu0=mu0,phi0=phi0,sigma0=sigma0,nu0=nu0,beta0=beta0,y0=y0,
                           gmax=gmax)
 res.svslp50s1_5
-#s50s1_5p=Sys.time()-sp
+k = -res.svslp50s1_5$lpostsvs
 ################################################################################
 H1=solve(res.svslp50s1_5$hessian)
 res.svslp50s1_5$mode
@@ -143,7 +142,7 @@ X=rmvnorm(n,mean=res.svslp50s1_5$mode,sigma=H1)
 Weigth<-array(0,dim=c(500,1))
 for(j in 1:n){
   if(j==1) time = Sys.time()
-  Weigth[j,1]=exp(2000
+  Weigth[j,1]=exp(k #2000
                   -svms.posterior(X[j,],simsvsl1$y[1:s1],y0=y0,m=m,gmax=gmax)
                   -log(dmvnorm(X[j,],mean=res.svslp50s1_5$mode,sigma=H1))
                   )
