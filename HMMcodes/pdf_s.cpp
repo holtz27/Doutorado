@@ -24,7 +24,7 @@ double my_function_sl (double u, void *p){
 /*********************************************************************************/
 
 // [[Rcpp::export]]
-Rcpp::NumericVector pdf_sl(Rcpp::NumericVector  y,double mu, double sigma, double nu){
+Rcpp::NumericVector pdf_s(Rcpp::NumericVector  y,double mu, double sigma, double nu){
   double lower_limit=0.0;
   double upper_limit =1.0;
   double abs_error = 1.0e-8;
