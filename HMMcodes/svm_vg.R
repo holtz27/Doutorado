@@ -3,7 +3,8 @@ rm(list=ls(all=TRUE))
 library("Rcpp")
 library("RcppArmadillo")
 library('mvtnorm')
-#setwd('C:/Users/8936381/Documents/Doutorado/Projeto Doc/HMMCodes/SVMTHMM')
+library(invgamma)
+setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
 sourceCpp("pdf_vg.cpp")
 ################################################################################
@@ -45,7 +46,7 @@ quantile <- function(x, weights, probs){
   
   return(quantiles)
 }
-fillallprobs.vg  <- function(x,beg,beta,nu,y){
+fillallprobs.vg <- function(x,beg,beta,nu,y){
   return((1/beg)*pdf_vg((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu))
 }
 svmvg.mllk <-function(parvect,y,y0,m,gmax){
@@ -147,7 +148,7 @@ X=rmvnorm(n,res.svmvg200_4_s1$mode,H1)
 Weigth <- array(0,dim=c(n,1))
 for(j in 1:n){
   if(j==1) s=Sys.time()
-  Weigth[j,1]=exp(5000
+  Weigth[j,1]=exp(1000
                   -svmvg.posterior(X[j,],simsvmvg1$y[1:s1],
                                   simsvmvg1$y0,m=m,gmax=gmax)
                   -dmvnorm(X[j,],res.svmvg200_4_s1$mode,sigma=H1,log=T)
