@@ -3,6 +3,7 @@
 #include<Rcpp.h>
 #include <RcppGSL.h>
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_sf_gamma.h>
 
 // set up struct that contains an Rcpp Function, this will be used in the function provided to gsl
 struct my_f_params {Rcpp::Function G;};
@@ -54,10 +55,11 @@ double my_function_vg (double u, void *p){
   double mu = (params->mu);
   double sigma = (params->sigma);
   double nu=(params->nu);
-  double f=(1.0/sqrt(M_2PI))*(sqrt(u)/sigma)*exp((-u*0.5/(sigma*sigma))
-                                                   *(x-mu)*(x-mu))*exp((nu/2)*log(nu/2))*exp(-0.5*nu/u)*
-                                                     exp(-lgamma(0.5*nu))
-    *exp(-(0.5*nu+1)*log(u));
+  double f=(1.0/sqrt(M_2PI))*(sqrt(u)/sigma)*exp((-u*0.5/(sigma*sigma))*
+           (x-mu)*(x-mu))*exp((nu/2)*log(nu/2))*exp(-0.5*nu/u)*
+           //exp(-lgamma(0.5*nu))*
+           exp(-gsl_sf_lngamma(0.5 * nu))* 
+           exp(-(0.5*nu+1)*log(u));
   return  f;
 }
 /*********************************************************************************/
@@ -65,8 +67,8 @@ double my_function_vg (double u, void *p){
 Rcpp::NumericVector pdf_vg(Rcpp::NumericVector  y,double mu, double sigma,double nu){
   double lower_limit=0.0;
   
-  double abs_error = 1.0e-8;
-  double rel_error = 1.0e-8;
+  double abs_error = 1.0e-6;
+  double rel_error = 1.0e-6;
   double result;
   double error;
   
