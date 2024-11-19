@@ -4,9 +4,10 @@ library("Rcpp")
 library("RcppArmadillo")
 library('mvtnorm')
 library(invgamma)
-setwd('~/HMM')
+#setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
 sourceCpp("pdf_vg.cpp")
+#sourceCpp("testpdf_vg.cpp")
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
@@ -15,8 +16,7 @@ svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lmu<-mu
   lphi <- log((1+phi)/(1-phi))
   lsigma <- log(sigma)
-  # nu > 2
-  lnu = log(nu-2)
+  lnu = log(nu)
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
 }
@@ -28,7 +28,7 @@ svm.pw2pn <- function(parvect){
   mu=parvect[4]
   phi <- (exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma <- exp(parvect[6])
-  nu = exp(parvect[7]) + 2
+  nu = exp(parvect[7])
   return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
 }
 quantile <- function(x, weights, probs){
@@ -111,7 +111,7 @@ betasim = c(0.2,0.07,-0.18)
 mu = 0.1
 phi = 0.98
 sigma = 0.1
-nu = 10
+nu = 8
 g_dim = 6000
 y0 = 0.2
 ################################################################################
@@ -126,29 +126,30 @@ par(mfrow=c(1,1))
 mu0=0.3
 phi0=0.96
 sigma0=0.2
-beta0=c(0.2, 0.1, -0.1)
+beta0=c(0.5, 0.1, -0.1)
 nu0=15
-gmax=4
+gmax=3
 ################################################################################
-s1 = 1000
+s1=500
 #s2=3000
 #s3=6000
 ################################################################################
-m=100
+m=50
 res.svmvg200_4_s1 <- svmvg.map(simsvmvg1$y[1:s1],m=m,
                               beta0=beta0,mu0=mu0,phi0=phi0,
                               sigma0=sigma0,nu0=nu0,y0=simsvmvg1$y0,
                               gmax=gmax)
 res.svmvg200_4_s1
+k = -res.svmvg200_4_s1$lpostsvmvg
 ################################################################################
 H1=signif(solve(res.svmvg200_4_s1$hessian),6)
 #res.svmt200_4_s1$mode
-n = 1e3
+n = 500
 X=rmvnorm(n,res.svmvg200_4_s1$mode,H1)
 Weigth <- array(0,dim=c(n,1))
 for(j in 1:n){
   if(j==1) s=Sys.time()
-  Weigth[j,1]=exp(1000
+  Weigth[j,1]=exp(k #1000
                   -svmvg.posterior(X[j,],simsvmvg1$y[1:s1],
                                   simsvmvg1$y0,m=m,gmax=gmax)
                   -dmvnorm(X[j,],res.svmvg200_4_s1$mode,sigma=H1,log=T)
@@ -164,7 +165,7 @@ beta2m=sum(X[,3]*Weigth)
 mum=sum(X[,4]*Weigth)
 phim=sum(((exp(X[,5])-1)/(exp(X[,5])+1))*Weigth)
 sigmam=sum(exp(X[,6])*Weigth)
-num=sum((exp(X[,7])+2)*Weigth)
+num=sum((exp(X[,7]))*Weigth)
 ################################################################################
 int_b0 = quantile(X[,1], Weigth, c(0.025, 0.975))
 int_b1 = quantile((exp(X[,2])-1)/(exp(X[,2])+1), Weigth, c(0.025, 0.975))
@@ -172,7 +173,7 @@ int_b2 = quantile(X[,3], Weigth, c(0.025, 0.975))
 int_mu = quantile(X[,4], Weigth, c(0.025, 0.975))
 int_phi = quantile( (exp(X[,5])-1)/(exp(X[,5])+1), Weigth, c(0.025, 0.975))
 int_sigma = quantile(exp(X[,6]), Weigth, c(0.025, 0.975))
-int_nu = quantile( (exp(X[,7])+2), Weigth, c(0.025, 0.975))
+int_nu = quantile( (exp(X[,7])), Weigth, c(0.025, 0.975))
 ################################################################################
 # Results
 results = matrix(c(betasim[1], beta0m, int_b0),nrow = 1)
@@ -193,5 +194,5 @@ vbeta2m<-sum(X[,3]^2*Weigth)-beta2m^2
 vmum<-sum(X[,4]^2*Weigth)-mum^2
 vphim<-sum((((exp(X[,5])-1)/(exp(X[,5])+1)))^2*Weigth)-phim^2
 vsigmam<-sum(exp(2*X[,6])*Weigth)-sigmam^2
-vnum = sum((exp(X[,7])+2)^2*Weigth)-num^2
+vnum = sum((exp(X[,7]))^2*Weigth)-num^2
 #########################################################
