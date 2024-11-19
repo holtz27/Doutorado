@@ -33,7 +33,7 @@ svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lphi <- log((1+phi)/(1-phi))
   lsigma <- log(sigma)
   # nu > 1
-  lnu = log(nu-1)
+  lnu = log(nu)
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
 }
@@ -45,7 +45,7 @@ svm.pw2pn <- function(parvect){
   mu=parvect[4]
   phi <- (exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma <- exp(parvect[6])
-  nu = exp(parvect[7]) + 2
+  nu = exp(parvect[7])
   return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
 }
 ## function that will be used to compute 'allprobs' in mllk below
@@ -124,8 +124,8 @@ phi0=0.96
 sigma0=0.2
 nu0=2.5
 beta0=c(0.5,0.1,-0.2)
-m=100
-gmax=4
+m=150
+gmax=3
 s1=1000
 ################################################################################
 res.svslp50s1_5<-svsl.map(simsvsl1$y[1:s1],m=m,
@@ -139,7 +139,7 @@ res.svslp50s1_5$mode
 require(mvtnorm)
 n=500
 X=rmvnorm(n,mean=res.svslp50s1_5$mode,sigma=H1)
-Weigth<-array(0,dim=c(500,1))
+Weigth<-array(0,dim=c(n,1))
 for(j in 1:n){
   if(j==1) time = Sys.time()
   Weigth[j,1]=exp(k #2000
@@ -157,7 +157,7 @@ beta2m=sum(X[,3]*Weigth)
 mum=sum(X[,4]*Weigth)
 phim=sum(((exp(X[,5])-1)/(exp(X[,5])+1))*Weigth)
 sigmam=sum(exp(X[,6])*Weigth)
-num=sum((exp(X[,7])+1)*Weigth)
+num=sum((exp(X[,7]))*Weigth)
 ################################################################################
 int_b0 = quantile(X[,1], Weigth, c(0.025, 0.975))
 int_b1 = quantile((exp(X[,2])-1)/(exp(X[,2])+1), Weigth, c(0.025, 0.975))
@@ -165,7 +165,7 @@ int_b2 = quantile(X[,3], Weigth, c(0.025, 0.975))
 int_mu = quantile(X[,4], Weigth, c(0.025, 0.975))
 int_phi = quantile( (exp(X[,5])-1)/(exp(X[,5])+1), Weigth, c(0.025, 0.975))
 int_sigma = quantile(exp(X[,6]), Weigth, c(0.025, 0.975))
-int_nu = quantile( (exp(X[,7])+1), Weigth, c(0.025, 0.975))
+int_nu = quantile( (exp(X[,7])), Weigth, c(0.025, 0.975))
 ################################################################################
 # Results
 results = matrix(c(beta[1], beta0m, int_b0),nrow = 1)
@@ -188,4 +188,3 @@ vphim<-sum((((exp(X[,5])-1)/(exp(X[,5])+1)))^2*Weigth)-phim^2
 vsigmam<-sum(exp(2*X[,6])*Weigth)-sigmam^2
 vnum = sum((exp(X[,7])+2)^2*Weigth)-num^2
 ################################################################################
-
