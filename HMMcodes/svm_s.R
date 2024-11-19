@@ -2,9 +2,11 @@
 rm(list=ls(all=TRUE))
 library("Rcpp")
 library("RcppArmadillo")
+library(parallel)
 library(mvtnorm)
 sourceCpp("mlogLk_Rcpp.cpp")
-sourceCpp("pdf_s.cpp")
+sourceCpp("parallel_pdf_s.cpp")
+#sourceCpp("pdf_s.cpp")
 ################################################################################
 ssvm.sim<-function(mu,phi,sigma,nu,beta,y0,g_dim){
   
@@ -124,10 +126,12 @@ phi0=0.96
 sigma0=0.2
 nu0=2.5
 beta0=c(0.5,0.1,-0.2)
-m=150
+m=50
 gmax=3
 s1=1000
 ################################################################################
+num_cores <- detectCores(logical = FALSE) # Número de núcleos físicos
+RcppParallel::setThreadOptions(numThreads = num_cores - 1) # Use todos menos 1
 res.svslp50s1_5<-svsl.map(simsvsl1$y[1:s1],m=m,
                           mu0=mu0,phi0=phi0,sigma0=sigma0,nu0=nu0,beta0=beta0,y0=y0,
                           gmax=gmax)
