@@ -2,12 +2,14 @@
 rm(list=ls(all=TRUE))
 library("Rcpp")
 library("RcppArmadillo")
+library(RcppParallel)
+library(parallel)
 library('mvtnorm')
 library(invgamma)
 #setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
-sourceCpp("pdf_vg.cpp")
-#sourceCpp("testpdf_vg.cpp")
+#sourceCpp("pdf_vg.cpp")
+sourceCpp("parallel_pdf_vg.cpp")
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
@@ -130,6 +132,8 @@ beta0=c(0.5, 0.1, -0.1)
 nu0=15
 gmax=3
 ################################################################################
+num_cores <- detectCores(logical = FALSE) # Número de núcleos físicos
+RcppParallel::setThreadOptions(numThreads = num_cores - 1) # Use todos menos 1
 s1=500
 #s2=3000
 #s3=6000
