@@ -9,7 +9,18 @@ library(invgamma)
 #setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
 #sourceCpp("pdf_vg.cpp")
-sourceCpp("parallel_pdf_vg.cpp")
+#sourceCpp("parallel_pdf_vg.cpp")
+# Função nativa do R: integrate
+pdf_vg <- function(y, mu, sigma, nu) {
+  res <- sapply(y, function(x) {
+    integrate(function(u) {
+      (1 / sqrt(2 * pi)) * (sqrt(u) / sigma) * exp((-u * 0.5 / (sigma * sigma)) * (x - mu)^2) *
+        exp((nu / 2) * log(nu / 2)) * exp(-0.5 * nu / u) * exp(-lgamma(0.5 * nu)) *
+        exp(-(0.5 * nu + 1) * log(u))
+    }, lower = 0, Inf)$value
+  })
+  return(res)
+}
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
