@@ -1,26 +1,14 @@
 ################################################################################
 rm(list=ls(all=TRUE))
 library("Rcpp")
-library("RcppArmadillo")
-library(RcppParallel)
-library(parallel)
+#library("RcppArmadillo")
+library(RcppNumerical)
 library('mvtnorm')
 library(invgamma)
 #setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
+sourceCpp("pdf2_vg.cpp")
 #sourceCpp("pdf_vg.cpp")
-#sourceCpp("parallel_pdf_vg.cpp")
-# Função nativa do R: integrate
-pdf_vg <- function(y, mu, sigma, nu) {
-  res <- sapply(y, function(x) {
-    integrate(function(u) {
-      (1 / sqrt(2 * pi)) * (sqrt(u) / sigma) * exp((-u * 0.5 / (sigma * sigma)) * (x - mu)^2) *
-        exp((nu / 2) * log(nu / 2)) * exp(-0.5 * nu / u) * exp(-lgamma(0.5 * nu)) *
-        exp(-(0.5 * nu + 1) * log(u))
-    }, lower = 0, Inf)$value
-  })
-  return(res)
-}
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
@@ -60,7 +48,7 @@ quantile <- function(x, weights, probs){
   return(quantiles)
 }
 fillallprobs.vg <- function(x,beg,beta,nu,y){
-  return((1/beg)*pdf_vg((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu))
+  return((1/beg)*pdf_vg((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,0.0,1.0,nu)$result)
 }
 svmvg.mllk <-function(parvect,y,y0,m,gmax){
   ny <- length(y)
@@ -124,7 +112,7 @@ betasim = c(0.2,0.07,-0.18)
 mu = 0.1
 phi = 0.98
 sigma = 0.1
-nu = 8
+nu = 10
 g_dim = 6000
 y0 = 0.2
 ################################################################################
@@ -141,10 +129,10 @@ phi0=0.96
 sigma0=0.2
 beta0=c(0.5, 0.1, -0.1)
 nu0=15
-gmax=3
+gmax=4
 ################################################################################
-num_cores <- detectCores(logical = FALSE) # Número de núcleos físicos
-RcppParallel::setThreadOptions(numThreads = num_cores - 1) # Use todos menos 1
+#num_cores <- detectCores(logical = FALSE) # Número de núcleos físicos
+#RcppParallel::setThreadOptions(numThreads = num_cores - 1) # Use todos menos 1
 s1=500
 #s2=3000
 #s3=6000
