@@ -7,8 +7,14 @@ class VG: public Func{
 private:
   double x;
   double nu;
+  
 public:
-  VG(double x_, double nu_) : x(x_), nu(nu_) {}
+  VG(double nu_) : nu(nu_) {}  // O valor de x não é definido no construtor
+  
+  // Método para modificar o valor de x
+  void set_x(double x_) {
+    x = x_;
+  }
   
   double operator()(const double& u) const
   {
@@ -26,9 +32,13 @@ Rcpp::List pdf_vg(Rcpp::NumericVector y, double mu, double sigma, double nu){
   Rcpp::NumericVector res(n);
   Rcpp::NumericVector err_vec(n);
   
+  VG f(nu); 
+  
   for(int i = 0; i < n; i++){
-    VG f(y[i], nu);
-    res[i] = integrate(f, lower, upper, err_est, err_code);
+    
+    f.set_x(y[i]);
+    
+    res[i] = integrate(f, lower, upper, err_est, err_code, 1e-4, 1e-4);
     err_vec[i] = err_est;
     
     if(err_code != 0) {
