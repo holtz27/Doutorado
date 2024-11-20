@@ -2,13 +2,15 @@
 rm(list=ls(all=TRUE))
 library("Rcpp")
 #library("RcppArmadillo")
+library(parallel)
+library(RcppParallel)
 library(RcppNumerical)
 library('mvtnorm')
 library(invgamma)
-#setwd('~/HMM')
 sourceCpp("mLogLk_Rcpp.cpp")
-sourceCpp("pdf2_vg.cpp")
 #sourceCpp("pdf_vg.cpp")
+#sourceCpp("pdf2_vg.cpp")
+sourceCpp("parallel_pdf2_vg.cpp")
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
@@ -116,7 +118,7 @@ nu = 10
 g_dim = 6000
 y0 = 0.2
 ################################################################################
-#set.seed(8936381)
+set.seed(8936381)
 simsvmvg1<-svmvg.sim(y0=y0,beta=betasim,mu=mu,phi=phi,sigma=sigma,nu=nu,g_dim=g_dim)
 par(mfrow=c(2,2))
 plot(simsvmvg1$y,lty=1,type="l")
@@ -131,8 +133,8 @@ beta0=c(0.5, 0.1, -0.1)
 nu0=15
 gmax=4
 ################################################################################
-#num_cores <- detectCores(logical = FALSE) # Número de núcleos físicos
-#RcppParallel::setThreadOptions(numThreads = num_cores - 1) # Use todos menos 1
+num_cores <- detectCores(logical = FALSE) 
+RcppParallel::setThreadOptions(numThreads = num_cores - 1) 
 s1=500
 #s2=3000
 #s3=6000
