@@ -32,7 +32,15 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
     }
     }
   } 
-  
+  ##############################################################################
+  indx = NULL
+  for(t in 1:rows){
+    x = boxplot(err[t, ], plot = FALSE)
+    if(is.finite(max(x$out))) indx = cbind(indx, which(err[t, ]==max(x$out)))
+  }
+  indx = unique(as.vector(indx))
+  err = err[, -indx]
+  ##############################################################################
   Data = cbind( matrix( apply( err, MARGIN = 1, mean ), ncol = 1 ),
                 matrix( apply( err^2, MARGIN = 1, mean ), ncol = 1 ),
                 prob.cob / conv )
@@ -42,6 +50,7 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
   return( list( resumo = round(x1 / conv, digits), 
                 metricas = round(Data, digits),
                 conv = conv,
-                errors = errors ) 
+                errors = errors,
+                indx = indx) 
   ) 
 }
