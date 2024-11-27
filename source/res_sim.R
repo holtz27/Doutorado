@@ -24,13 +24,8 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
     }else{
       x1 = x1 + s[[ i ]]
       err[ ,i ] = ( matrix(s[[ i ]][, 1], ncol = 1) - theta_vdd ) / theta
-      # prob cob
-      l1 = as.numeric( s[[ i ]][, 3] < theta_vdd )
-      l2 = as.numeric( s[[ i ]][, 5] > theta_vdd )
-      prob.piv = matrix( round( 0.5 * (l1 + l2), 0 ), ncol = 1)
-      prob.cob = prob.cob + prob.piv
     }
-    }
+  }
   } 
   ##############################################################################
   indx = NULL
@@ -42,9 +37,19 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
   indx = unique(as.vector(indx))
   err = err[, -indx]
   ##############################################################################
+  # Prob cob
+  L = 1:T
+  L = L[-indx]
+  for(i in L){
+    l1 = as.numeric( s[[ i ]][, 3] < theta_vdd )
+    l2 = as.numeric( s[[ i ]][, 5] > theta_vdd )
+    prob.piv = matrix(round(0.5*(l1 + l2),0), ncol = 1)
+    prob.cob = prob.cob + prob.piv
+  }
+  
   Data = cbind( matrix( apply( err, MARGIN = 1, mean ), ncol = 1 ),
                 matrix( apply( err^2, MARGIN = 1, mean ), ncol = 1 ),
-                prob.cob / conv )
+                prob.cob / length(L) )
   #row.names( Data ) = c('mu_h', 'phi_h', 's_h', 'mu_a', 'phi_a', 'ls_a', 'v')
   colnames( Data ) = c('vies', 'reqm', 'prob.cob')
   
