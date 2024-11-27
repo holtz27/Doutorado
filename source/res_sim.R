@@ -37,7 +37,7 @@ res_sim = function( s , theta_vdd, med.abs = TRUE, digits = 4 ){
   for(t in 1:rows){
     x = boxplot(err[t, ], plot = FALSE)
     out = x$out
-    if(!is.null(out)) indx = cbind(indx, which(err[t, ]==max(out)))
+    if(length(out)!=0) indx = cbind(indx, which(err[t, ]==max(out)))
   }
   indx = unique(as.vector(indx))
   err = err[, -indx]
