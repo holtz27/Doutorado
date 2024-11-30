@@ -15,7 +15,7 @@ parameters{
   vector<lower=0>[T] U;
   real a1;
   real<lower=2> v;
-  real<lower=0> k;
+  real<lower=0> ka;
 }
 transformed parameters{
   real<lower=-1,upper=1> phi_h;
@@ -54,12 +54,14 @@ model {
   s2_h ~ inv_gamma( 2.5, 0.025 );
   
   // Prioris a
-  a1 ~ normal(0, sqrt(10));
+  // Prioris a
+  ka ~ gamma(0.1, 0.1);
+  a1 ~ double_exponential(0, 1/ka);
   s2_a ~ inv_gamma( 2.5, 0.025 );
   target += - lambda1 * sqrt(1 - phi_a) - 0.5 * log(1 - phi_a);
   
   //tails
-  v ~ gamma(12, .8);
+  v ~ gamma(2.0, 0.1);
   
   // model
   U ~ gamma(0.5 * v, 0.5 * v);
