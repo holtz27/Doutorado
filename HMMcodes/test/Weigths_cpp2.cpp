@@ -29,10 +29,9 @@ vec svm_pw2pn(vec parvect){
   
   return p;
 }
-
 double mlogLk_Rcpp(mat allprobs, mat egamma, rowvec foo, int n){
   double lscale=0;
-  double sumfoo;
+  double sumfoo=0;
   
   for(int i=1;i<n;i++){		
     foo=foo*egamma%allprobs.row(i);
@@ -97,7 +96,6 @@ struct Outer2Worker : public Worker {
   }
 };
 
-
 double logprior(vec parvect){
   
   double logp = log_normpdf(parvect[0], 0.0, 10.0);
@@ -137,20 +135,19 @@ double svms_mllk2(vec parvect, vec y, double y0, int m, double gmax){
   Outer2Worker worker(y, sey, p.subvec(0, 2), p[6], ylag, allprobs);
   parallelFor(0, ny * m, worker);
   
-  
   //mat allprobs = OUTER(y, sey, yy, p.subvec(0, 2), p[6]);
   
   vec delta = arma::normpdf(bs, p[3], p[5]/sqrt(1-p[4]*p[4])) * intlen;  
   rowvec foo = delta.t() % allprobs.row(0);
   
   double result = -mlogLk_Rcpp(allprobs, Gamma, foo, ny); 
+  if(std::isnan(result)) warning("Result foi NaN!");
   
   return result;
 }
 double posterior(vec parvect, vec y, double y0, int m, double gmax){
   return svms_mllk2(parvect, y, y0, m, gmax) + logprior(parvect);  
 }
-
 List svsl_map_Rcpp(const vec parvect_init, vec y, double y0, int m, double gmax){
   
   Environment stats("package:stats"); 
@@ -166,7 +163,6 @@ List svsl_map_Rcpp(const vec parvect_init, vec y, double y0, int m, double gmax)
                            _["gmax"] = gmax);
   return opt_results;
 }
-
 double MVDnorm(vec x, vec mu, mat L, double log_det){
   int dim = mu.n_elem;
   
@@ -194,88 +190,34 @@ double MVDnorm(vec x, vec mu, mat L, double log_det){
   
   return log_density;
 }
-mat MVRnorm(int n, vec mu, mat sigma){
-  int dim = mu.n_rows;
-  
-  // Verificar compatibilidade das dimensões
-  if (sigma.n_rows != dim || sigma.n_cols != dim) {
-    stop("A matriz de covariância deve ser quadrada e corresponder ao tamanho do vetor de médias.");
-  }
-  
-  // Configurar gerador
-  gsl_rng_env_setup();
-  const gsl_rng_type *T = gsl_rng_default; // Usa o gerador padrão
-  gsl_rng *r = gsl_rng_alloc(T);
-  
-  // Converter mu para gsl_vector
-  gsl_vector *gsl_mu = gsl_vector_alloc(dim);
-  for (int i = 0; i < dim; ++i) {
-    gsl_vector_set(gsl_mu, i, mu[i]);
-  }
-  
-  // Converter sigma para gsl_matrix
-  gsl_matrix *gsl_sigma = gsl_matrix_alloc(dim, dim);
-  for (int i = 0; i < dim; ++i) {
-    for (int j = 0; j < dim; ++j) {
-      gsl_matrix_set(gsl_sigma, i, j, sigma(i, j));
-    }
-  }
-  if (gsl_linalg_cholesky_decomp(gsl_sigma) != GSL_SUCCESS) {
-    gsl_matrix_free(gsl_sigma);
-    gsl_rng_free(r);
-    stop("Erro ao realizar a decomposição de Cholesky.");
-  }
-  
-  // Matriz de resultados
-  mat result(dim, n);
-  gsl_vector *gsl_sample = gsl_vector_alloc(dim);
-  
-  // Gerar amostras
-  for (int i = 0; i < n; ++i) {
-    if (gsl_ran_multivariate_gaussian(r, gsl_mu, gsl_sigma, gsl_sample) != GSL_SUCCESS){
-      gsl_rng_free(r);
-      gsl_vector_free(gsl_mu);
-      gsl_vector_free(gsl_sample);
-      gsl_matrix_free(gsl_sigma);
-      stop("Erro ao gerar amostra.");
-    }
-    
-    for (int j = 0; j < dim; ++j) {
-      result(j, i) = gsl_vector_get(gsl_sample, j);
-    }
-  }
-  
-  // Liberar memória
-  gsl_rng_free(r);
-  gsl_vector_free(gsl_mu);
-  gsl_vector_free(gsl_sample);
-  gsl_matrix_free(gsl_sigma);
-  
-  return result;
-}
 
 // [[Rcpp::export]]
 List Weigth_cpp2(const vec parvect_init, vec y, double y0, int m, double gmax, int n){
   
   List opt_results = svsl_map_Rcpp(parvect_init, y, y0, m, gmax);
   
-  double k = opt_results["value"];
+  double k = opt_results["value"], p1 = 0;
   vec map = opt_results["par"];
   mat H1 = opt_results["hessian"];
   H1 = H1.i(); 
   mat L = arma::chol(H1, "lower");
   double log_det = 2 * sum(log(L.diag()));
-  
-  mat X2 = MVRnorm(n, map, H1);
-  
-  vec weigths(n);
+
+  mat X = mvnrnd(map, H1, n);
+  vec weigths(n, fill::zeros);
+  int indx=0;
   for(int i=0; i < n; i++){
-    weigths(i) = exp(k -posterior(X2.col(i), y, y0, m, gmax)
-                       -MVDnorm(X2.col(i), map, L, log_det));
+    indx=0;
+    p1 = -posterior(X.col(i), y, y0, m, gmax);
+    while(std::isnan(p1) && indx<5){
+      X.col(i) = mvnrnd(map, H1);
+      p1 = -posterior(X.col(i), y, y0, m, gmax);
+      indx++;
+    }
+    if(std::isnan(p1)) continue;
+    weigths(i) += exp(k+p1-MVDnorm(X.col(i), map, L, log_det));
   }
-  if(sum(weigths) == 0) stop("Instabilidade numérica");
   weigths /= sum(weigths);
   
-  //return weigths;
-  return List::create(Named("weigths") = weigths , _["X"] = X2);
+  return List::create(Named("weigths") = weigths , _["X"] = X);
 }
