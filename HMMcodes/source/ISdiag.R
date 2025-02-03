@@ -1,5 +1,3 @@
-library(diagis)
-
 quantile = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   
   ix <- order(x)
@@ -15,14 +13,14 @@ quantile = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   
   return(quantiles)
 }
-ISdiag = function(Weigth, X, knu=0){
+ISdiag = function(Weigth, X, knu=2){
   
   if(sum(Weigth) != 1){
     warning('Weigth is unnormalized')
     Weigth = Weigth/sum(Weigth)
   }
   
-  p <- function(parvect, knu){
+  p <- function(parvect, knu=knu){
     
     # Inicializar beta
     beta <- array(0, dim = 3)
@@ -53,7 +51,7 @@ ISdiag = function(Weigth, X, knu=0){
       sigma <- exp(parvect[6])
     }
     
-    # nu > knu
+    # Verificações para nu
     if (parvect[7] > log_double_xmax) {
       nu <- double_xmax
     } else if (parvect[7] < -log_double_xmax) {
@@ -65,18 +63,18 @@ ISdiag = function(Weigth, X, knu=0){
     return(c(beta, mu, phi, sigma, nu))
   }
   ### mean #####################################################################
-  Thetas = apply(X, MARGIN=1, FUN=p)
-  wThetas = apply(Thetas, MARGIN = 1, FUN='*', Weigth)
-  theta_hat = apply(wThetas, MARGIN = 2, sum)
+  Thetas = t(apply(X=X, MARGIN=1, FUN=p, knu=knu))
+  wThetas = apply(X=Thetas, MARGIN = 2, FUN='*', Weigth)
+  theta_hat = apply(X=wThetas, MARGIN = 2, sum)
   ### var ######################################################################
-  Vars = apply(Thetas, 2, '-', theta_hat)
-  wVars = apply(Vars, MARGIN = 1, FUN='*', Weigth)
+  Vars = t(apply(X=Thetas, 1, '-', theta_hat))
+  wVars = apply(X=Vars, MARGIN = 2, FUN='*', Weigth)
   wVars = wVars^2
-  Vars_hat = apply(wVars, MARGIN = 2, sum)
+  Vars_hat = apply(X=wVars, MARGIN = 2, sum)
   ### quantiles ################################################################
-  Quants = apply(Thetas, 1, quantile, Weigth)
-
-  Results = cbind(theta_hat, Vars_hat, t(Quants))
+  Quants = t(apply(Thetas, 2, quantile, Weigth))
+  
+  Results = cbind(theta_hat, Vars_hat, Quants)
   colnames(Results) = c('mean', 'var', '2.5%', '50%', '97.5%')
   row.names(Results) = c('b0','b1','b2','mu','phi','sigma','nu')
   Results = signif(Results, 3)
