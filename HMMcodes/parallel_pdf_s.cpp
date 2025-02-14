@@ -9,8 +9,6 @@
 struct my_sl_params {
   double x, mu, sigma, nu;
 };
-
-// Função que será integrada
 double my_function_sl(double u, void* p) {
   struct my_sl_params* params = (struct my_sl_params*)p;
   double x = params->x;
@@ -61,12 +59,9 @@ struct PDFWorker : public RcppParallel::Worker {
 
 // [[Rcpp::export]]
 Rcpp::NumericVector pdf_s(const Rcpp::NumericVector& y, double mu, double sigma, double nu) {
+  
   Rcpp::NumericVector res(y.size());
-  
-  // Instancia a classe paralela
   PDFWorker worker(y, mu, sigma, nu, res);
-  
-  // Executa o loop em paralelo
   RcppParallel::parallelFor(0, y.size(), worker);
   
   return res;
