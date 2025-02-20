@@ -2,34 +2,33 @@ library( doParallel )
 
 source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/cobal/source/forecast_vol.R')
-model.dir = paste0('C:/Users/8936381/Documents/cobal/models')
-path = paste0( model.dir, '/ig.stan')
+model.dir = paste0('C:/Users/8936381/Documents/Doutorado/Eventos/cobal/models')
+path = paste0(model.dir, '/ig.stan')
 model_stan1 = rstan::stan_model(file = path)
 path = paste0(model.dir, '/pcp.stan')
 model_stan2 = rstan::stan_model(file = path)
 
-out.dir = 'C:/Users/8936381/Documents/cobal/simulation'
-
+out.dir = 'C:/Users/8936381/Documents/Doutorado/Eventos/cobal/simulation'
 
 seed = sample(1:1e6, 1)
 set.seed( seed ) 
-T = 2e3
+T = 2e2
 b = 0.1
 mu = -1
 # (phi, sigma) \in { (0.95, 0.225), (0.99, 0.1) }
 phi = 0.95 
 sigma = 0.225
-xi = 0.05 # 0, 0.005, 0.05
+xi = 0.00 # 0, 0.005, 0.05
 a1 = -0.1
-theta_vdd = matrix(c(b, mu, phi, sigma, sqrt(xi), a1), ncol = 1)
+theta_vdd = matrix(c(mu, phi, sigma, xi), ncol = 1)
 
-M = 100
+M = 3
 k = 5
 err1 = err2 = matrix(nrow = k, ncol = M)
-lambda = -log( 0.5 ) / sqrt( 0.5 )
+lambda = -log(0.5)/0.5
 
-warmup = 2e3
-iters = 1e3
+warmup = 2e2
+iters = 1e2
 
 num_cores = detectCores() - 1
 cl = makeCluster( num_cores )
@@ -62,23 +61,17 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
   while( any(test > 0, is.nan(test), is.na(test)) ){
     draws = rstan::sampling(model_stan1, 
                             data = list(T = length( y.train ), 
-                                        y = as.numeric( y.train ),
-                                        a1 = a1
-                            ),
+                                        y = as.numeric( y.train )),
                             chains = 1,
                             warmup = warmup,
                             iter = warmup + iters,
-                            cores = 1
-    )
-    #x = rstan::extract(draws)
-    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h', 'a1') )
-    theta = matrix(x$b, nrow = 1)
-    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a, x$a1)
+                            cores = 1)
+    x = rstan::extract( draws, pars = c('b','mu','phi','s_h','s_a','h') )
+    theta = rbind(x$b, x$mu, x$phi, x$s_h, x$s_a)
     s = num_analisys(draws = theta, 
-                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'a1'),
+                     names = c('b','mu','phi','s_h','s_a'),
                      digits = 4,
-                     hdp = TRUE
-    )
+                     hdp = TRUE)
     test = sum( abs( s[ , 'CD'] ) > 1.96 )
   }
   summary1 = s
@@ -96,23 +89,17 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
     draws = rstan::sampling(model_stan2, 
                             data = list(T = length( y.train ), 
                                         y = as.numeric( y.train ),
-                                        lambda = lambda,
-                                        a1 = a1
-                            ),
+                                        lambda = lambda),
                             chains = 1,
                             warmup = warmup,
                             iter = warmup + iters,
-                            cores = 1
-    )
-    #x = rstan::extract(draws)
-    x = rstan::extract( draws, pars = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'h', 'a1') )
-    theta = matrix(x$b, nrow = 1)
-    theta = rbind(theta, x$mu, x$phi, x$s_h, x$s_a, x$ls_a, x$a1)
+                            cores = 1)
+    x = rstan::extract( draws, pars = c('b','mu','phi','s_h','s_a','h') )
+    theta = rbind(x$b, x$mu, x$phi, x$s_h, x$s_a)
     s = num_analisys(draws = theta, 
-                     names = c('b', 'mu', 'phi', 's_h', 's_a', 'ls_a', 'a1'),
+                     names = c('b','mu','phi','s_h','s_a'),
                      digits = 4,
-                     hdp = TRUE
-    )
+                     hdp = TRUE)
     test = sum( abs( s[ , 'CD'] ) > 1.96 )
   }
   summary2 = s
@@ -135,13 +122,7 @@ result = foreach(it = 1:M, .packages = c('rstan')) %dopar% {
 }
 
 stopCluster( cl )
+result
 
-save( result, theta_vdd, seed,
-      file = paste0( out.dir, 
-                     '/sim_xi_', xi, '_', phi, '_', sigma, 
-                     '.RData') 
-    )
+#save( result, theta_vdd,file = paste0( out.dir, '/simulacao_xi_', xi, '.RData') )
 
-elap = 0
-for(i in 1:M) elap = elap + result[[ i ]]$time
-as.numeric( elap, 'hours' ) / num_cores
