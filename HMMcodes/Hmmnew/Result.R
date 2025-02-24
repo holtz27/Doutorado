@@ -37,11 +37,12 @@ boxplot(Reps[6,], main='sigma')
 boxplot(Reps[7,], main='nu')
 par(mfrow=c(1,1))
 
-dim(Reps)
-indx = which(Reps[7,] >= 40)
-Reps = Reps[, -indx]
-dim(Reps)
+d1=dim(Reps)
+indx = which(Reps[7,] >= 100)
+if(length(indx)!=0) Reps = Reps[, -indx]
+d2=dim(Reps)
 
+(d1[2]-d2[2])/d1[2]
 ###############################################################################
 ### Metrics evaluation
 rel.err = err = matrix(0, 
@@ -60,12 +61,13 @@ mrad = apply(abs(rel.err), 1, mean)
 rel.mse = apply(rel.err^2, 1, mean)
 p.cob = rep(0, 7)
 Indxs = 1:length(reps_cleaned)
-for(i in Indxs[-indx]){
+if(length(indx)!=0) Indxs=Indxs[-indx]
+for(i in Indxs){
   M = as.numeric(reps_cleaned[[i]]$Results[, c('2.5%')] < theta)
   M = rbind(M,as.numeric(reps_cleaned[[i]]$Results[, c('97.5%')] > theta))
   p.cob = p.cob + round(apply(M, 2, mean), 0)
 }
-p.cob = p.cob/length(Indxs[-indx])
+p.cob = p.cob/length(Indxs)
 
 Result = theta
 Result = cbind(Result, m)
@@ -74,7 +76,7 @@ Result = cbind(Result, mrad)
 #Result = cbind(Result, mse)
 Result = cbind(Result, rel.mse)
 Result = cbind(Result, p.cob)
-Result = signif(Result, 2) #round(Result, 4)
+Result = round(Result, 4) #signif(Result, 2)
 colnames(Result) = c('Theta', 'Mean', 'MRB', 'MRAD', 'Rel.MSE', 'Cover prob.')
 row.names(Result) = c('b0', 'b1', 'b2', 'mu', 'phi', 'sigma', 'nu')
 Result
