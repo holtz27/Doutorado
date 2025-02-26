@@ -15,10 +15,10 @@ quantile = function(x, weights, probs=c(0.025, 0.5, 0.975)){
 }
 ISdiag = function(Weigth, X, knu=2){
   
-  if(sum(Weigth) != 1){
-    warning('Weigth is unnormalized')
-    Weigth = Weigth/sum(Weigth)
-  }
+  #if(sum(Weigth) != 1){
+  #  warning('Weigth is unnormalized')
+  #  Weigth = Weigth/sum(Weigth)
+  #}
   
   p <- function(parvect, knu=knu){
     
