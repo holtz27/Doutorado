@@ -1,6 +1,6 @@
 library('mvtnorm')
-setwd('~/HMMnew')
-Rcpp::sourceCpp("mlogLk_Rcpp.cpp")
+Rcpp::sourceCpp("~/mlogLk_Rcpp.cpp")
+Rcpp::sourceCpp('~/pdf_t.cpp')
 ################################################################################
 double_eps <- .Machine$double.eps
 double_xmax <- .Machine$double.xmax
@@ -32,7 +32,8 @@ svm.pw2pn <- function(parvect){
   return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
 }
 fillallprobs <- function(x,beg,beta,nu,y){
-  return( (1/beg)*dt((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,df=nu) )
+  #return( (1/beg)*dt((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg,df=nu) )
+  return( (1/beg)*pdf_t((x-beta[1]-beta[2]*y-beta[3]*beg^2)/beg, df=nu) )
 }
 svmt.mllk <-function(parvect,y,y0,m,gmax){
   ny <- length(y)
@@ -72,7 +73,7 @@ svmt.posterior <-function(parvect,y,y0,m,gmax){
 svmt.map <- function(y, y0, m, parvect0, gmax){
   
   #parvect <- svm.pn2pw(beta=beta0,mu=mu0,phi=phi0,sigma=sigma0,nu=nu0)
-  mod <- optim(parvect0,svmt.posterior,y=y,y0=y0,m=m,gmax=gmax, hessian=TRUE)
+  mod <- optim(parvect0, svmt.posterior, y=y,y0=y0,m=m,gmax=gmax, hessian=TRUE)
   mode <- mod$par
   conv = mod$convergence
   
@@ -115,7 +116,7 @@ gmax=2.5
 y = svmt.sim(y0=y0,beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu,g_dim=g_dim)
 plot(y$y, type='l')
 ###############################################################################
-Results = times  = list()
+Results = times = list()
 npd = rep(0, 4)
 i=1
 s1=1500
