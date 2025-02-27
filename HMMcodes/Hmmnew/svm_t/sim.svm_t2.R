@@ -1,3 +1,4 @@
+library(parallel)
 library('mvtnorm')
 Rcpp::sourceCpp("~/mlogLk_Rcpp.cpp")
 Rcpp::sourceCpp('~/pdf_t.cpp')
@@ -8,6 +9,9 @@ double_xmin <- .Machine$double.xmin
 log_double_xmax <- log(double_xmax)
 log_double_xmin <- log(double_xmin)
 ################################################################################
+num_cores <- detectCores(logical = FALSE) 
+RcppParallel::setThreadOptions(numThreads = num_cores - 1) 
+################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lbeta1<- beta[1]
   lbeta2<-log((1+beta[2])/(1-beta[2]))
@@ -15,8 +19,8 @@ svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lmu<-mu
   lphi <- log((1+phi)/(1-phi))
   lsigma <- log(sigma)
-  # nu > 2
-  lnu = log(nu-2)
+  # 2<nu<40
+  lnu = log(nu-2)-log(40-nu)
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
 }
@@ -28,7 +32,7 @@ svm.pw2pn <- function(parvect){
   mu=parvect[4]
   phi <- (exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma <- exp(parvect[6])
-  nu = exp(parvect[7]) + 2
+  nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
   return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
 }
 fillallprobs <- function(x,beg,beta,nu,y){
@@ -164,7 +168,7 @@ for(m in c(50, 100, 150, 200)){
     }else{
       stop('Error normalize constante weigths!')
     }
-    Results[[i]] = ISdiag(Weigth=Weigth, X=X, knu=2)
+    Results[[i]] = ISdiag(Weigth=Weigth, X=X, nu.lower=2, nu.upper=40)
     times[[i]] = as.numeric(Sys.time()-time, units='mins')
   }
   i = i + 1
@@ -219,7 +223,7 @@ for(m in c(50, 100, 150, 200)){
     }else{
       stop('Error normalize constante weigths!')
     }
-    Results[[i]] = ISdiag(Weigth=Weigth, X=X, knu=2)
+    Results[[i]] = ISdiag(Weigth=Weigth, X=X, nu.lower=2, nu.upper=40)
     times[[i]] = as.numeric(Sys.time()-time, units='mins')
   }
   i = i + 1
@@ -274,7 +278,7 @@ for(m in c(50, 100, 150, 200)){
     }else{
       stop('Error normalize constante weigths!')
     }
-    Results[[i]] = ISdiag(Weigth=Weigth, X=X, knu=2)
+    Results[[i]] = ISdiag(Weigth=Weigth, X=X, nu.lower=2, nu.upper=40)
     times[[i]] = as.numeric(Sys.time()-time, units='mins')
   }
   i = i + 1
