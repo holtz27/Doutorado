@@ -13,14 +13,9 @@ quantile = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   
   return(quantiles)
 }
-ISdiag = function(Weigth, X, knu=2){
+ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf){
   
-  #if(sum(Weigth) != 1){
-  #  warning('Weigth is unnormalized')
-  #  Weigth = Weigth/sum(Weigth)
-  #}
-  
-  p <- function(parvect, knu=knu){
+  p <- function(parvect, nu.lower, nu.upper){
     
     # Inicializar beta
     beta <- array(0, dim = 3)
@@ -52,18 +47,28 @@ ISdiag = function(Weigth, X, knu=2){
     }
     
     # Verificações para nu
-    if (parvect[7] > log_double_xmax) {
-      nu <- double_xmax
-    } else if (parvect[7] < -log_double_xmax) {
-      nu <-  double_eps
-    } else {
-      nu <- exp(parvect[7]) + knu
+    if(is.finite(nu.upper)){
+      if (parvect[7] > log_double_xmax){
+        nu = nu.upper
+      } else if (parvect[7] < -log_double_xmax){
+        nu = nu.lower
+      } else {
+        nu = (nu.upper*exp(parvect[7])+nu.lower)/(1+exp(parvect[7]))
+      }
+    }else{
+      if (parvect[7] > log_double_xmax){
+        nu = double_xmax
+      } else if (parvect[7] < -log_double_xmax){
+        nu = double_xmin
+      } else {
+        nu = exp(parvect[7]) + nu.lower
+      }
     }
     
     return(c(beta, mu, phi, sigma, nu))
   }
   ### mean #####################################################################
-  Thetas = t(apply(X=X, MARGIN=1, FUN=p, knu=knu))
+  Thetas = t(apply(X=X, MARGIN=1, FUN=p, nu.lower=nu.lower, nu.upper=nu.upper))
   wThetas = apply(X=Thetas, MARGIN = 2, FUN='*', Weigth)
   theta_hat = apply(X=wThetas, MARGIN = 2, sum)
   ### var ######################################################################
@@ -77,7 +82,7 @@ ISdiag = function(Weigth, X, knu=2){
   Results = cbind(theta_hat, Vars_hat, Quants)
   colnames(Results) = c('mean', 'var', '2.5%', '50%', '97.5%')
   row.names(Results) = c('b0','b1','b2','mu','phi','sigma','nu')
-  Results = signif(Results, 3)
+  Results = round(Results, 4)#signif(Results, 3)
   
   return(list(Results=Results, ess = diagis::ess(Weigth)))
 }
