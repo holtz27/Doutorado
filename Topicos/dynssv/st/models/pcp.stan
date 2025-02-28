@@ -55,10 +55,10 @@ model {
   s2_h ~ inv_gamma( 2.5, 0.025 );
   
   // Prioris a
-  // Prioris a
   ka ~ gamma(0.1, 0.1);
   a1 ~ double_exponential(0, 1/ka);
-  s2_a ~ weibull( 0.5, pow(lambda2, -2 ) );
+  s_a ~ exponential(lambda2);
+  //s2_a ~ weibull( 0.5, pow(lambda2, -2 ) );
   target += - lambda1 * sqrt(1 - phi_a) - 0.5 * log(1 - phi_a);
   
   //tails
