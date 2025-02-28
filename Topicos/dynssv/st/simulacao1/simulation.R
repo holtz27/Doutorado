@@ -33,7 +33,7 @@ s_a = 0.0 # { 0, 0.05, 0.1 }
 v = 10
 
 theta_vdd = matrix(c(mu, phi_h, s_h, phi_a, s_a, v), ncol = 1)
-lambda = -log( 0.5 ) / sqrt( 0.5 )
+lambda = -log( 0.5 ) / 0.5
 
 M = 3
 warmup = 2e2
