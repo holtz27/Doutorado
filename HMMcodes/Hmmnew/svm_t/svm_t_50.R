@@ -20,7 +20,9 @@ svm.pn2pw <- function(beta,mu,phi,sigma,nu){
   lphi <- log((1+phi)/(1-phi))
   lsigma <- log(sigma)
   # nu > 2
-  lnu = log(nu-2)
+  #lnu = log(nu-2)
+  # 2<nu<40
+  lnu = log(nu-2)-log(40-nu)
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
 }
@@ -32,7 +34,8 @@ svm.pw2pn <- function(parvect){
   mu=parvect[4]
   phi <- (exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma <- exp(parvect[6])
-  nu = exp(parvect[7]) + 2
+  #nu = exp(parvect[7]) + 2
+  nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
   return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
 }
 fillallprobs <- function(x,beg,beta,nu,y){
@@ -119,7 +122,7 @@ m=50
 gmax=2.5
 ################################################################################
 
-N=2
+N=300
 reps=w=sim.y=list()
 times = npd = rep(0, N)
 
