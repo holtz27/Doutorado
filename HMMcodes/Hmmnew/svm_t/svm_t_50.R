@@ -1,7 +1,7 @@
 library('mvtnorm')
 library(parallel)
-Rcpp::sourceCpp("~/mlogLk_Rcpp.cpp")
-Rcpp::sourceCpp("~/pdf_t.cpp")
+Rcpp::sourceCpp("~/HMMnew/mlogLk_Rcpp.cpp")
+Rcpp::sourceCpp("~/HMMnew/svm_t/sim1/pdf_t.cpp")
 ################################################################################
 num_cores <- detectCores(logical = FALSE) 
 RcppParallel::setThreadOptions(numThreads = num_cores - 1) 
@@ -122,7 +122,7 @@ m=50
 gmax=2.5
 ################################################################################
 
-N=300
+N=3
 reps=w=sim.y=list()
 times = npd = rep(0, N)
 
@@ -172,7 +172,7 @@ for(rep in 1:N){
       }else{
         warning('Error normalize constante weigths!')
       }
-      reps[[rep]] = ISdiag(Weigth=Weigth, X=X, knu=2)
+      reps[[rep]] = ISdiag(Weigth=Weigth, X=X, nu.lower=2, nu.upper=40)
     }
     w[[rep]] = Weigth
     sim.y[[rep]] = y$y
@@ -181,4 +181,4 @@ for(rep in 1:N){
   
 }
 
-save(reps, times, w, sim.y, file = 't_1500_50.RData')
+save(reps, times, npd, file = 't_1500_50.RData')
