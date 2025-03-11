@@ -65,13 +65,13 @@ svmt.mllk <-function(parvect,y,y0,m,gmax){
   return(-lscale)
 }
 svmt.prior <-function(parvect){
-  lprior=dnorm(parvect[1],0,10, log = TRUE)
-  +dnorm(parvect[2],0.5,10, log = TRUE)
-  +dnorm(parvect[3],0,10, log = TRUE)
-  +dnorm(parvect[4],0,10, log = TRUE)
-  +dnorm(parvect[5],4.5,10, log = TRUE)
-  +dnorm(parvect[6],-1.5,10, log = TRUE) 
-  +dnorm(parvect[7],0, 10, log = TRUE)
+  lprior=dnorm(parvect[1], 0, 10, log = TRUE)
+  +dnorm(parvect[2], 0.5, 10, log = TRUE)
+  +dnorm(parvect[3], 0,10, log = TRUE)
+  +dnorm(parvect[4], 0,10, log = TRUE)
+  +dnorm(parvect[5], 4.5, 10, log = TRUE)
+  +dnorm(parvect[6], -1.5, 10, log = TRUE) 
+  +dnorm(parvect[7], 0, 1.5, log = TRUE)
   return(-lprior)  
 }
 svmt.posterior <-function(parvect,y,y0,m,gmax){
