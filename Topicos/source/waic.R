@@ -1,7 +1,6 @@
-############### waic
 waic = function(data, mu_t, sigma_t){
   n = length(data)
-  M = matrix(nrow = dim(h)[1], ncol = n)
+  M = matrix(nrow = dim(sigma_t)[1], ncol = n)
   for(j in 1:n){
     M[, j] = dnorm(data[j], 
                    mean = mu_t[,j], 
@@ -10,3 +9,4 @@ waic = function(data, mu_t, sigma_t){
   }
   return(loo::waic(M))
 }
+
