@@ -17,7 +17,7 @@ svm.viterbi = function(y, theta_hat, m, gmax){
   allprobs = outer(xx, sey, "fillallprobs", beta=p[1:3], nu=p[7], yy)
   delta = dnorm(bs, p[4], p[6]/sqrt(1-p[5]^2))*intlen
   
-  # defining xis
+  # defining xi
   xi = matrix(0, n, m)
   foo = delta*allprobs[1,]
   xi[1,] = foo/sum(foo)
@@ -26,7 +26,7 @@ svm.viterbi = function(y, theta_hat, m, gmax){
     xi[i,] = foo/sum(foo)
   }
   
-  # calculating is
+  # evaluating i
   iv = numeric(n)
   iv[n] = which.max(xi[n,])
   for(i in (n-1):1){
