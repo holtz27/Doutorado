@@ -10,7 +10,7 @@ res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4, names){
     theta[theta == 0] = 1
   }
   
-  err = amp = matrix(0, nrow=rows, ncol=T) 
+  theta_hat = err = amp = matrix(0, nrow=rows, ncol=T) 
   x1 = prob.cob = 0
   errors = NULL
   
@@ -23,7 +23,8 @@ res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4, names){
       conv = conv-1
     }else{
       x1 = x1 + s[[i]]
-      err[,i] = (matrix(s[[ i ]][, 1], ncol = 1) - theta_vdd)/theta
+      theta_hat[,i] = matrix(s[[ i ]][, 1], ncol = 1)
+      err[,i] = (theta_hat[,i] - theta_vdd)/theta
     }
     }
   } 
@@ -48,11 +49,14 @@ res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4, names){
     prob.cob = prob.cob + prob.piv
   }
   
-  Data = cbind(matrix(apply(err, MARGIN = 1, mean ), ncol = 1),
+  Data = cbind(theta_vdd,
+               matrix(apply(theta_hat, MARGIN = 1, mean), ncol = 1),
+               matrix(apply(err, MARGIN = 1, mean ), ncol = 1),
                matrix(apply(err^2, MARGIN = 1, mean ), ncol = 1),
-               prob.cob/length(L), apply(amp, 1, mean) )
+               prob.cob/length(L), 
+               apply(amp, 1, mean) )
   row.names(Data) = names #c('mu_h', 'phi_h', 's_h', 'phi_a', 's_a', 'v')
-  colnames(Data) = c('vies', 'reqm', 'prob.cob', 'amplitude')
+  colnames(Data) = c('Theta', 'Theta_hat', 'vies', 'reqm', 'prob.cob', 'amplitude')
   
   return(list(resumo = round(x1/conv, digits), 
               metricas = round(Data, digits),
