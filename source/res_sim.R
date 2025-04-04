@@ -1,4 +1,4 @@
-res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4){
+res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4, names){
   
   T = length(s)
   conv = T
@@ -51,7 +51,7 @@ res_sim = function(s , theta_vdd, med.abs = TRUE, digits = 4){
   Data = cbind(matrix(apply(err, MARGIN = 1, mean ), ncol = 1),
                matrix(apply(err^2, MARGIN = 1, mean ), ncol = 1),
                prob.cob/length(L), apply(amp, 1, mean) )
-  row.names(Data) = c('mu_h', 'phi_h', 's_h', 'phi_a', 's_a', 'v')
+  row.names(Data) = names #c('mu_h', 'phi_h', 's_h', 'phi_a', 's_a', 'v')
   colnames(Data) = c('vies', 'reqm', 'prob.cob', 'amplitude')
   
   return(list(resumo = round(x1/conv, digits), 
