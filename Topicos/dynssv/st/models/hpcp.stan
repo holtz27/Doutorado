@@ -1,7 +1,8 @@
 data{
   int<lower=0> T;
   vector[T] y;
-  real<lower=0> lambda;
+  real<lower=0> a_b;
+  real<lower=0> b;
 }
 parameters{
   real mu;
@@ -14,6 +15,7 @@ parameters{
   vector[T] a_std;
   vector<lower=0>[T] W;
   vector<lower=0>[T] U;
+  real<lower=0> k;
   real<lower=2> v;
 }
 transformed parameters{
@@ -22,9 +24,9 @@ transformed parameters{
   vector[T] a = a_std * s_a;
   vector[T] h = h_std * s_h;
   phi_h = (2*phiT_h - 1);
-  s2_h = pow(s_h, 2);
+  s2_h = pow( s_h, 2 );
   
-  h[1] /= sqrt(1 - phi_h * phi_h);
+  h[1] /= sqrt(1-phi_h*phi_h);
   h += mu;
   a[1] += a1;
   for (t in 2:T){
@@ -33,12 +35,12 @@ transformed parameters{
   }
 
   vector<lower=-1, upper=1>[T] delta = a./sqrt(1 + square(a));
-  real k1 = sqrt(0.5*v)*tgamma(0.5*(v-1))/tgamma(0.5*v);
-  real k2 = v/(v-2);
-  vector[T] omega = 1./sqrt(k2 - 2*square(delta*k1)/pi()); 
+  real k1 = sqrt(0.5 * v)*tgamma(0.5*(v-1))/tgamma(0.5*v);
+  real k2 = v / (v-2);
+  vector[T] omega = 1./sqrt(k2-2*square(delta*k1)/pi()); 
   vector[T] mean_st = -sqrt(2/pi())*k1*delta.*omega;
   vector[T] mu_t = mean_st + omega.*delta.*W.*exp(0.5*h)./sqrt(U);
-  vector[T] sigma_t = omega.*sqrt(1 - square(delta)).*exp(0.5*h)./sqrt(U);
+  vector[T] sigma_t = omega.*sqrt(1-square(delta)).*exp(0.5*h)./sqrt(U);
 }
 model{
   // Prioris h
@@ -49,7 +51,8 @@ model{
   // Prioris a
   ka ~ gamma(0.1, 0.1);
   a1 ~ double_exponential(0, 1/ka);
-  s_a ~ exponential(lambda);
+  k ~ gamma(a_b,b);
+  s_a ~ exponential(1/k);
   
   //tails
   v ~ gamma(2.0, 0.1);
@@ -59,5 +62,5 @@ model{
   h_std ~ std_normal();
   a_std ~ std_normal();
   y ~ normal(mu_t, sigma_t);
-  target += -0.5*square(W);
+  target += - 0.5 * square(W);
 }
