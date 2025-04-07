@@ -37,11 +37,11 @@ boxplot(Reps[6,], main='sigma')
 boxplot(Reps[7,], main='nu')
 par(mfrow=c(1,1))
 
+indx=numeric(0)
 d1=dim(Reps)
 indx = which(Reps[7,] >= 100)
 if(length(indx)!=0) Reps = Reps[, -indx]
 d2=dim(Reps)
-
 (d1[2]-d2[2])/d1[2]
 ###############################################################################
 ### Metrics evaluation
