@@ -58,6 +58,7 @@ postW = function(y, h, U, a, v){
 }
 z = postW(y=y, h=h, U=U, a=a, v=v)
 plot(z)
+################################################################################
 # U
 postU = function(U, y, h, W, a, v, tx){
   
@@ -116,7 +117,7 @@ postU = function(U, y, h, W, a, v, tx){
 z = postU(U=U, y=y, h=h, W=W, a=a, v=v, tx=rep(0, T))
 plot(z$U)
 sum(z$tx)/T
-
+################################################################################
 # h
 posth=function(y, h, U, W, a, v, theta2, counth){
   
@@ -137,10 +138,10 @@ posth=function(y, h, U, W, a, v, theta2, counth){
   phi = theta2[2]
   sig2 = theta2[3]^2
   
-  delta_tilde = c(mu, rep(mu * (1-phi), T-1))
+  delta_tilde = c(mu, rep(mu*(1-phi), n-1))
   Hphi = diag(n)
   for(t in 2:n) Hphi[t, t-1] = -phi
-  d_values = c((1 - phi^2) / sig2, rep(1/sig2, T-1))
+  d_values = c((1 - phi^2) / sig2, rep(1/sig2, n-1))
   D = diag(d_values)
   HinvSH = t(Hphi) %*% D %*% Hphi
   deltah = solve(Hphi, delta_tilde)
@@ -149,16 +150,14 @@ posth=function(y, h, U, W, a, v, theta2, counth){
   # Optimization step
   ht = h
   errh = 1
-  NRstep = 0.1
+  NRstep = 0.5
   while(errh > 1e-3){
-    
     yexpht = y*exp(-0.5*ht)
     fh = -0.5 + 0.5*yexpht*invc22*(yexpht-c1)
     # Newton-Rapshon
     #Gh = -0.5*y^2*exp(-ht)/c2^2 + 0.25*y*exp(-0.5*ht)/c2^2
     # Fisher Score
     Gh = 0.25*(2*(c1^2 + c2^2) - c1)*invc22
-    
     Gdiag = diag(Gh)
     kh_tilde = HinvSH + Gdiag
     kh = fh + Gh * ht + HinvSHdeltah 
@@ -166,39 +165,43 @@ posth=function(y, h, U, W, a, v, theta2, counth){
     newht = (1-NRstep)*ht + NRstep*hp
     errh = max(abs(newht-ht))
     ht = newht
-
   }
-  cat('optim step: ok!')
+  cat('optim step: ok!', '\n')
   cholHh = chol(kh_tilde)
   
   # AR step
   hstar = ht
   uh = hstar-deltah
-  logc = -0.5*crossprod(uh, HinvSH%*%uh) -0.5*sum(hstar/c2)
-  logc = logc - 0.5*crossprod(exp(-hstar)*invc22,(y-c1*exp(0.5*hstar))^2)
+  logc = -0.5*crossprod(uh, HinvSH%*%uh)
+  logc = logc -0.5*sum(hstar) -0.5*sum( exp(-hstar)*invc22*(y-c1*exp(0.5*hstar))^2 )
   logc = logc + log(3)
+  
+  cat('logc:', logc, '\n')
+  
   flag = 0
   while(flag==0){
-    
     hc = ht + cholHh %*% rnorm(n)
     vhc = hc-ht
     uhc = hc-deltah
-    alpARc = -0.5*crossprod(uhc, HinvSH%*%uhc) - 0.5*sum(hc/c2)
-    alpARc = alpARc - 0.5*crossprod(exp(-hc)*invc22, (y-c1*exp(0.5*hc))^2)
-    alpARc = alpARc - logc
-    alpARc = alpARc + 0.5*crossprod(vhc, kh_tilde%*%vhc)
     
+    logf = -0.5*crossprod(uhc, HinvSH%*%uhc) 
+    logf = logf-0.5*sum(hc)-0.5*sum(exp(-hc)*invc22*(y-c1*exp(0.5*hc))^2)
+    cat('log f(h): ', logf, '\n')
+    
+    logq = -0.5*crossprod(vhc, kh_tilde%*%vhc)+logc
+    cat('log q(h): ', logq, '\n')
+    
+    alpARc = logf-logq
+  
     if(alpARc>log(runif(1))) flag = 1
-    
   }
   
   # MH step
   vh = h-ht
   uh = h-deltah
-  alpAR = -0.5*crossprod(uh, HinvSH%*%uh) -0.5*sum(h/c2)
-  alpAR = alpAR - 0.5*crossprod(exp(-h)*invc22, (y-c1*exp(0.5*h))^2)
-  alpAR = alpAR - logc
-  alpAR = as.numeric(alpAR)
+  alpAR = -0.5*crossprod(uh, HinvSH%*%uh) -0.5*sum(h)
+  alpAR = alpAR -0.5*sum(exp(-h)*invc22*(y-c1*exp(0.5*h))^2)
+  alpAR = alpAR -0.5*crossprod(vh, kh_tilde%*%vh) - logc
   
   if(alpAR < 0){
     alpMH = 1
@@ -210,18 +213,54 @@ posth=function(y, h, U, W, a, v, theta2, counth){
   
   if(alpMH > log(runif(1))){
     hout = hc
-    counth = counth + 1
+    counth = counth+1
   }
   time = Sys.time() - time
   
   return(list(hout=hout, time=time, counth=counth))
 }
+#Rcpp::sourceCpp('~/topicos/st/posth.cpp')
 z = posth(y=y, h=h, U=U, W=W, a=a, v=v, theta2=c(mu,phi_h,s_h), counth=0)
-
-#z$time
 ht = z$hout
 z$counth
 z$time
-
 plot(h, type='l', col='red',ylim=c(-25,25))
 lines(ht)
+################################################################################
+# theta
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
