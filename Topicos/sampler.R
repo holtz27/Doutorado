@@ -3,11 +3,11 @@ rtnorm = function(n){
   return(qnorm(0.5*(u+1)))
 }
 
-T = 1.5e3
+T = 2e1
 # log-volatility
-mu = 0
-phi_h = 0.99
-s_h = 0.1
+mu = 0.1
+phi_h = 0.98
+s_h = 0.22
 # dynskew
 s_a = 0.01
 v = 8
@@ -118,10 +118,11 @@ plot(z$U)
 sum(z$tx)/T
 
 # h
-posth=function(y, h, U, W, a, v, theta2){
+posth=function(y, h, U, W, a, v, theta2, counth){
   
   time = Sys.time()
-  
+  hout = h
+  n=length(y)
   delta = a/sqrt(1+a*a)
   k1 = sqrt(0.5*v)*gamma(0.5*(v-1))/gamma(0.5*v)
   k2 = v/(v-2)
@@ -129,6 +130,7 @@ posth=function(y, h, U, W, a, v, theta2){
   gammat = -sqrt(2/pi)*delta*omega*k1
   c1 = gammat + omega*delta*W/sqrt(U)
   c2 = omega*(1-delta*delta)/sqrt(U)
+  invc22 = 1/c2^2
   
   #theta2=c(mu, phi, s_h)
   mu = theta2[1]
@@ -136,26 +138,22 @@ posth=function(y, h, U, W, a, v, theta2){
   sig2 = theta2[3]^2
   
   delta_tilde = c(mu, rep(mu * (1-phi), T-1))
-  
-  Hphi = diag(T)
-  for(t in 2:T) Hphi[t, t-1] = -phi
-  
+  Hphi = diag(n)
+  for(t in 2:n) Hphi[t, t-1] = -phi
   d_values = c((1 - phi^2) / sig2, rep(1/sig2, T-1))
   D = diag(d_values)
   HinvSH = t(Hphi) %*% D %*% Hphi
-  
   deltah = solve(Hphi, delta_tilde)
   HinvSHdeltah = HinvSH %*% deltah
   
+  # Optimization step
   ht = h
   errh = 1
   NRstep = 0.1
   while(errh > 1e-3){
     
-    #fh = -0.5 + 0.5*y^2*exp(-ht)/c2^2 - 0.5*y*c1*exp(-0.5*ht)/c2^2
     yexpht = y*exp(-0.5*ht)
-    invc22 = c2^2
-    fh = -0.5 + 0.5*yexpht*yexpht*invc22 - 0.5*c1*yexpht*invc22
+    fh = -0.5 + 0.5*yexpht*invc22*(yexpht-c1)
     # Newton-Rapshon
     #Gh = -0.5*y^2*exp(-ht)/c2^2 + 0.25*y*exp(-0.5*ht)/c2^2
     # Fisher Score
@@ -170,16 +168,60 @@ posth=function(y, h, U, W, a, v, theta2){
     ht = newht
 
   }
-  time = Sys.time() - time
+  cat('optim step: ok!')
   cholHh = chol(kh_tilde)
-  return(list(ht=ht, kh=kh_tilde, time=time, cholHh=cholHh))
+  
+  # AR step
+  hstar = ht
+  uh = hstar-deltah
+  logc = -0.5*crossprod(uh, HinvSH%*%uh) -0.5*sum(hstar/c2)
+  logc = logc - 0.5*crossprod(exp(-hstar)*invc22,(y-c1*exp(0.5*hstar))^2)
+  logc = logc + log(3)
+  flag = 0
+  while(flag==0){
+    
+    hc = ht + cholHh %*% rnorm(n)
+    vhc = hc-ht
+    uhc = hc-deltah
+    alpARc = -0.5*crossprod(uhc, HinvSH%*%uhc) - 0.5*sum(hc/c2)
+    alpARc = alpARc - 0.5*crossprod(exp(-hc)*invc22, (y-c1*exp(0.5*hc))^2)
+    alpARc = alpARc - logc
+    alpARc = alpARc + 0.5*crossprod(vhc, kh_tilde%*%vhc)
+    
+    if(alpARc>log(runif(1))) flag = 1
+    
+  }
+  
+  # MH step
+  vh = h-ht
+  uh = h-deltah
+  alpAR = -0.5*crossprod(uh, HinvSH%*%uh) -0.5*sum(h/c2)
+  alpAR = alpAR - 0.5*crossprod(exp(-h)*invc22, (y-c1*exp(0.5*h))^2)
+  alpAR = alpAR - logc
+  alpAR = as.numeric(alpAR)
+  
+  if(alpAR < 0){
+    alpMH = 1
+  }else{
+    if(alpARc < 0){
+      alpMH = - alpAR;
+    }else alpMH = alpARc - alpAR;
+  } 
+  
+  if(alpMH > log(runif(1))){
+    hout = hc
+    counth = counth + 1
+  }
+  time = Sys.time() - time
+  
+  return(list(hout=hout, time=time, counth=counth))
 }
-z = posth(y=y, h=h+rnorm(T), U=U, W=W, a=a, v=v, theta2=c(mu,phi_h,s_h))
+z = posth(y=y, h=h, U=U, W=W, a=a, v=v, theta2=c(mu,phi_h,s_h), counth=0)
 
+#z$time
+ht = z$hout
+z$counth
 z$time
-ht = z$ht
-kh = z$kh
-z$cholHh
 
-plot(h, type='l', col='red',ylim=c(-2.5,2.5))
+plot(h, type='l', col='red',ylim=c(-25,25))
 lines(ht)
