@@ -3,243 +3,194 @@ source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/Topicos/waic.R')
 
 # compiling stan models
-model.dir = '~/Doutorado/Pesquisa/Papers/Topicos/DS-SV/Code/st/models'
-path = paste0( model.dir, '/static.stan')
-model_stan0 = rstan::stan_model(file = path)
-path = paste0( model.dir, '/ig.stan')
-model_stan1 = rstan::stan_model(file = path)
-path = paste0(model.dir, '/pcp.stan')
-model_stan2 = rstan::stan_model(file = path)
-path = paste0(model.dir, '/exp.stan')
-model_stan3 = rstan::stan_model(file = path)
-
-out.dir = '~/Doutorado/Pesquisa/Papers/Topicos/DS-SV/Code/st/aplicacao'
+model.dir = '~/topicos/st/models'
+out.dir = '~/topicos/st/aplication'
 
 summary = list('static','ig', 'pcp', 'exp')
 waic.criterion = matrix(0, nrow = 1, ncol = 4)
 colnames(waic.criterion) = c('static', 'ig', 'pcp', 'exp')
 
-warmup = 3e3
-iter = 2e3
+warmup = 3e2
+iter = 2e2
 
-for( i in 1:1 ){
+for(i in 1:1){
   
   ##################
   # fitting model0 #
   ##################
-  test = 1
-  while( test > 0 || is.na(test) || is.nan(test) ){
-    draws = rstan::sampling(model_stan0, 
-                            data = list(T = length( log.ret ), 
-                                        y = as.numeric( log.ret )
-                            ),
-                            chains = 1,
-                            warmup = warmup,
-                            iter = warmup + iter,
-                            cores = 1
-    )
-    x = rstan::extract(draws, 
-                       pars = c('mu', 'phi_h', 's_h', 'h', 'a', 'v', 'mu_t', 'sigma_t')
-    )
-    theta = matrix(x$mu, nrow = 1)
-    theta = rbind(theta, x$phi_h, x$s_h, x$a, x$v)
-    summary$static = num_analisys(draws = theta, 
-                                  names = c('mu', 'phi_h', 's_h', 'a', 'v'),
-                                  digits = 4,
-                                  hdp = TRUE
-    )
-    test = sum( abs( summary$static[ , 'CD'] ) > 1.96 )
-  }
+  path = paste0(model.dir, '/static.stan')
+  model_stan = rstan::stan_model(file=path)
+  draws = rstan::sampling(model_stan, 
+                          data = list(T=length(log.ret), 
+                                      y=as.numeric(log.ret)),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1)
+  x = rstan::extract(draws, 
+                     pars=c('mu','phi_h','s_h','h','a','v','mu_t','sigma_t'))
+  theta = rbind(x$mu, x$phi_h, x$s_h, x$a, x$v)
+  summary$static = num_analisys(draws = theta, 
+                                names = c('mu','phi_h','s_h','a','v'),
+                                digits = 4,
+                                hdp = TRUE)
   # Plots
-  pdf( paste0( out.dir, '/static.pdf'), width = 20, height = 10 )
+  pdf(paste0(out.dir,'/static.pdf'), width=20, height=10)
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
                         expression(alpha),
-                        expression(nu)
-              ) 
-  )
+                        expression(nu)))
   dev.off()
-  h_hat1 = apply( x$h, MARGIN = 2, mean )
+  h_hat1=apply(x$h, MARGIN=2, mean)
   # waic
-  WAIC = waic(data = log.ret, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
-  waic.criterion[ 1 ] = WAIC
+  WAIC=waic(data=log.ret, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
+  waic.criterion[1]=WAIC
   
   ##################
   # fitting model1 #
   ##################
-  test = 1
-  while( test > 0 || is.na(test) || is.nan(test) ){
-    draws = rstan::sampling(model_stan1, 
-                            data = list(T = length( log.ret ), 
-                                        y = as.numeric( log.ret ),
-                                        lambda1 = 9.473
-                            ),
-                            chains = 1,
-                            warmup = warmup,
-                            iter = warmup + iter,
-                            cores = 1
-    )
-    x = rstan::extract(draws, 
-                       pars = c('mu', 'phi_h', 's_h', 'h',
-                                'phi_a', 's_a', 'a', 'ls_a',
-                                'v', 'mu_t', 'sigma_t')
-    )
-    theta = matrix(x$mu, nrow = 1)
-    theta = rbind(theta, x$phi_h, x$s_h, x$phi_a, x$s_a, x$v)
-    summary$ig = num_analisys(draws = theta, 
-                                  names = c('mu', 'phi_h', 's_h', 
-                                            'phi_a', 's_a', 
-                                            'v'),
-                                  digits = 4,
-                                  hdp = TRUE
-    )
-    test = sum( abs( summary$ig[ , 'CD'] ) > 1.96 )
-  }
+  path = paste0( model.dir, '/ig.stan')
+  model_stan = rstan::stan_model(file = path)
+  draws = rstan::sampling(model_stan, 
+                          data = list(T = length(log.ret), 
+                                      y = as.numeric(log.ret)),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1
+  )
+  x = rstan::extract(draws, 
+                     pars = c('mu','phi_h','s_h','h','a','s_a','v','mu_t','sigma_t'))
+  theta = rbind(x$mu, x$phi_h, x$s_h, x$s_a, x$v)
+  summary$ig = num_analisys(draws = theta, 
+                            names = c('mu', 'phi_h', 's_h', 's_a','v'),
+                            digits=4,
+                            hdp=TRUE)
   # Plots
-  pdf( paste0( out.dir, '/ig.pdf'), width = 20, height = 10 )
+  pdf(paste0(out.dir,'/ig.pdf'), width=20, height=10)
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
-                        expression(phi[a]),
                         expression(sigma[a]),
-                        expression(nu)
-              ) 
-  )
+                        expression(nu)) )
   dev.off()
-  h_hat2 = apply( x$h, MARGIN = 2, mean )
+  
+  pdf(paste0(out.dir, '/ig_a.pdf'), 
+      width = 20, height = 10 )
+  a_hat = apply( x$a, MARGIN = 2, mean )
+  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
+  lines( a_min, type = 'l', lty = 2 )
+  lines( a_max, type = 'l', lty = 2 )
+  abline( h = 0, col = 'grey', lty = 2)
+  dev.off()
+  
+  h_hat2 = apply(x$h, MARGIN = 2, mean)
   # waic
   WAIC = waic(data = log.ret, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
-  waic.criterion[ 2 ] = WAIC
+  waic.criterion[2] = WAIC
   
   ##################
   # fitting model2 #
   ##################
-  test = 1
-  while( test > 0 || is.na(test) || is.nan(test) ){
-    draws = rstan::sampling(model_stan2, 
-                            data = list(T = length( log.ret ), 
-                                        y = as.numeric( log.ret ),
-                                        lambda1 = 9.473,
-                                        lambda2 = -log( 0.5 )/sqrt(0.5)
-                            ),
-                            chains = 1,
-                            warmup = warmup,
-                            iter = warmup + iter,
-                            cores = 1
-    )
-    x = rstan::extract(draws, 
-                       pars = c('mu', 'phi_h', 's_h', 'h',
-                                'phi_a', 's_a', 'a', 'ls_a',
-                                'v', 'mu_t', 'sigma_t')
-    )
-    theta = matrix(x$mu, nrow = 1)
-    theta = rbind(theta, x$phi_h, x$s_h, x$phi_a, x$s_a, x$v)
-    # Numeric Analysis
-    summary$pcp = num_analisys(draws = theta, 
-                               names = c('mu', 'phi_h', 's_h', 
-                                         'phi_a', 's_a', 
-                                         'v'),
-                               digits = 4,
-                               hdp = TRUE
-    )
-    test = sum( abs( summary$pcp[ , 'CD'] ) > 1.96 )
-  }
+  path = paste0(model.dir, '/pcp.stan')
+  model_stan = rstan::stan_model(file = path)
+  draws = rstan::sampling(model_stan, 
+                          data = list(T = length( log.ret ), 
+                                      y = as.numeric( log.ret ),
+                                      lambda = -log(0.5)/0.5),
+                          chains = 1,
+                          warmup = warmup,
+                          iter = warmup + iter,
+                          cores = 1)
+  x = rstan::extract(draws, 
+                     pars = c('mu','phi_h','s_h','h','s_a','a','v','mu_t','sigma_t'))
+  theta = rbind(x$mu, x$phi_h, x$s_h, x$s_a, x$v)
+  # Numeric Analysis
+  summary$pcp = num_analisys(draws = theta, 
+                             names = c('mu','phi_h','s_h','s_a','v'),
+                             digits = 4,
+                             hdp = TRUE)
   # Plots
-  pdf( paste0( out.dir, '/pcp.pdf'), width = 20, height = 10 )
+  pdf(paste0(out.dir,'/pcp.pdf'), width=20, height=10)
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
-                        expression(phi[a]),
                         expression(sigma[a]),
-                        expression(nu)
-              ) 
-  )
+                        expression(nu)))
   dev.off()
   
-  #pdf( paste0( dir_out, 'ig_a.pdf'), 
-  #     width = 20, height = 10 )
-  #a_hat = apply( x$a, MARGIN = 2, mean )
-  #a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
-  #a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
-  #plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
-  #lines( a_min, type = 'l', lty = 2 )
-  #lines( a_max, type = 'l', lty = 2 )
-  #abline( h = 0, col = 'grey', lty = 2)
-  #dev.off()
+  pdf(paste0(out.dir, '/pcp_a.pdf'), 
+      width = 20, height = 10 )
+  a_hat = apply( x$a, MARGIN = 2, mean )
+  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
+  lines( a_min, type = 'l', lty = 2 )
+  lines( a_max, type = 'l', lty = 2 )
+  abline( h = 0, col = 'grey', lty = 2)
+  dev.off()
   
-  h_hat3 = apply( x$h, MARGIN = 2, mean )
+  h_hat3 = apply(x$h, MARGIN=2, mean)
   # waic
-  WAIC = waic(data = y, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
-  waic.criterion[ 3 ] = WAIC
+  WAIC = waic(data=log.ret, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
+  waic.criterion[3] = WAIC
   
   ##################
   # fitting model3 #
   ##################
-  test = 1
-  while( test > 0 || is.na(test) || is.nan(test) ){
-    draws = rstan::sampling(model_stan3, 
-                            data = list(T = length( log.ret ), 
-                                        y = as.numeric( log.ret ),
-                                        c = 0.1,
-                                        d = 0.1
-                            ),
-                            chains = 1,
-                            warmup = warmup,
-                            iter = warmup + iter,
-                            cores = 1
-    )
-    x = rstan::extract(draws, 
-                       pars = c('mu', 'phi_h', 's_h', 'h',
-                                'phi_a', 's_a', 'a', 'ls_a',
-                                'v', 'mu_t', 'sigma_t')
-    )
-    theta = matrix(x$mu, nrow = 1)
-    theta = rbind(theta, x$phi_h, x$s_h, x$phi_a, x$s_a, x$v)
-    # Numeric Analysis
-    summary$exp =  num_analisys(draws = theta, 
-                                names = c('mu', 'phi_h', 's_h', 
-                                          'phi_a', 's_a', 
-                                          'v'),
-                                digits = 4,
-                                hdp = TRUE
-    )
-    test = sum( abs( summary$exp[ , 'CD'] ) > 1.96 )
-  }
-  
+  path = paste0(model.dir, '/exp.stan')
+  model_stan = rstan::stan_model(file = path)
+  draws = rstan::sampling(model_stan, 
+                         data = list(T=length(log.ret), 
+                                     y=as.numeric(log.ret)),
+                         chains = 1,
+                         warmup = warmup,
+                         iter = warmup + iter,
+                         cores = 1)
+  x = rstan::extract(draws, 
+                     pars = c('mu','phi_h','s_h','h','s_a','a','v','mu_t','sigma_t'))
+  theta = rbind(x$mu, x$phi_h, x$s_h, x$s_a, x$v)
+  # Numeric Analysis
+  summary$exp =  num_analisys(draws = theta, 
+                              names = c('mu','phi_h','s_h','s_a','v'),
+                              digits = 4,
+                              hdp = TRUE)
   # Plots
-  pdf( paste0( out.dir, '/exp.pdf'), width = 20, height = 10 )
+  pdf(paste0(out.dir,'/exp.pdf'), width=20, height=10)
   trace_plots(theta,
               burn = 0, lags = 1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
-                        expression(phi[a]),
                         expression(sigma[a]),
                         expression(nu)
               ) 
   )
   dev.off()
   
-  #pdf( paste0( dir_out, 'pcp_a.pdf'), 
-  #     width = 20, height = 10 )
-  #a_hat = apply( x$a, MARGIN = 2, mean )
-  #a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
-  #a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
-  #plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
-  #lines( a_min, type = 'l', lty = 2 )
-  #lines( a_max, type = 'l', lty = 2 )
-  #abline( h = 0, col = 'grey', lty = 2)
-  #dev.off()
+  pdf(paste0(out.dir, '/exp_a.pdf'), 
+       width = 20, height = 10 )
+  a_hat = apply( x$a, MARGIN = 2, mean )
+  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
+  lines( a_min, type = 'l', lty = 2 )
+  lines( a_max, type = 'l', lty = 2 )
+  abline( h = 0, col = 'grey', lty = 2)
+  dev.off()
+  
   h_hat4 = apply( x$h, MARGIN = 2, mean )
   # waic
-  WAIC = waic(data = y, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
+  WAIC = waic(data=log.ret, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
   waic.criterion[ 4 ] = WAIC
   
   # Save
@@ -252,8 +203,8 @@ for( i in 1:1 ){
 }
 
 summary
-waic.criterion = rbind(waic.criterion,
-                       as.numeric(waic.criterion[1, ] == min( waic.criterion)))
+#waic.criterion = rbind(waic.criterion,
+#                       as.numeric(waic.criterion[1, ] == min( waic.criterion)))
 waic.criterion
 
 # Figure Volatilities
