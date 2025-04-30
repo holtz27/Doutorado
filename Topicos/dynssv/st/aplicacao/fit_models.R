@@ -1,17 +1,24 @@
 source('https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R')
 source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/Topicos/waic.R')
+source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/Topicos/source/pds.R')
 
 # compiling stan models
 model.dir = '~/topicos/st/models'
 out.dir = '~/topicos/st/aplication'
 
 summary = list('static','ig', 'pcp', 'exp')
-waic.criterion = matrix(0, nrow = 1, ncol = 4)
+waic.criterion = matrix(0, nrow = 2, ncol = 4)
 colnames(waic.criterion) = c('static', 'ig', 'pcp', 'exp')
 
-warmup = 3e2
-iter = 2e2
+y_tilde = list('static','ig', 'pcp', 'exp')
+
+warmup = 3e1
+iter = 2e1
+
+k=10
+log.ret_train = log.ret[1:(length(log.ret)-k)]
+log.ret_test = log.ret[(length(log.ret)-k+1):length(log.ret)]
 
 for(i in 1:1){
   
@@ -21,8 +28,8 @@ for(i in 1:1){
   path = paste0(model.dir, '/static.stan')
   model_stan = rstan::stan_model(file=path)
   draws = rstan::sampling(model_stan, 
-                          data = list(T=length(log.ret), 
-                                      y=as.numeric(log.ret)),
+                          data = list(T=length(log.ret_train), 
+                                      y=as.numeric(log.ret_train)),
                           chains = 1,
                           warmup = warmup,
                           iter = warmup + iter,
@@ -37,7 +44,7 @@ for(i in 1:1){
   # Plots
   pdf(paste0(out.dir,'/static.pdf'), width=20, height=10)
   trace_plots(theta,
-              burn = 0, lags = 1,
+              burn=0, lags=1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
@@ -46,17 +53,25 @@ for(i in 1:1){
   dev.off()
   h_hat1=apply(x$h, MARGIN=2, mean)
   # waic
-  WAIC=waic(data=log.ret, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
-  waic.criterion[1]=WAIC
-  
+  WAIC=waic(data=log.ret_train, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
+  waic.criterion[1,1]=WAIC
+  # pds
+  PDS = pds(ht=x$h[,length(log.ret_train)], 
+            at=x$a[,length(log.ret_train)], 
+            theta=theta, 
+            yobs=log.ret_test,
+            dyn=FALSE)
+  score=mean(PDS$pds_star)
+  waic.criterion[2,1]=score
+  y_tilde$static = PDS$newy
   ##################
   # fitting model1 #
   ##################
   path = paste0( model.dir, '/ig.stan')
   model_stan = rstan::stan_model(file = path)
   draws = rstan::sampling(model_stan, 
-                          data = list(T = length(log.ret), 
-                                      y = as.numeric(log.ret)),
+                          data = list(T = length(log.ret_train), 
+                                      y = as.numeric(log.ret_train)),
                           chains = 1,
                           warmup = warmup,
                           iter = warmup + iter,
@@ -72,7 +87,7 @@ for(i in 1:1){
   # Plots
   pdf(paste0(out.dir,'/ig.pdf'), width=20, height=10)
   trace_plots(theta,
-              burn = 0, lags = 1,
+              burn=0, lags=1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
@@ -93,17 +108,24 @@ for(i in 1:1){
   
   h_hat2 = apply(x$h, MARGIN = 2, mean)
   # waic
-  WAIC = waic(data = log.ret, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
-  waic.criterion[2] = WAIC
-  
+  WAIC = waic(data = log.ret_train, mut = x$mu_t, st = x$sigma_t)$estimates['waic', 1]
+  waic.criterion[1,2] = WAIC
+  # pds
+  PDS = pds(ht=x$h[,length(log.ret_train)], 
+            at=x$a[,length(log.ret_train)], 
+            theta=theta, 
+            yobs=log.ret_test)
+  score=mean(PDS$pds_star)
+  waic.criterion[2,2]=score
+  y_tilde$ig = PDS$newy
   ##################
   # fitting model2 #
   ##################
   path = paste0(model.dir, '/pcp.stan')
   model_stan = rstan::stan_model(file = path)
   draws = rstan::sampling(model_stan, 
-                          data = list(T = length( log.ret ), 
-                                      y = as.numeric( log.ret ),
+                          data = list(T = length(log.ret_train), 
+                                      y = as.numeric(log.ret_train),
                                       lambda = -log(0.5)/0.5),
                           chains = 1,
                           warmup = warmup,
@@ -120,7 +142,7 @@ for(i in 1:1){
   # Plots
   pdf(paste0(out.dir,'/pcp.pdf'), width=20, height=10)
   trace_plots(theta,
-              burn = 0, lags = 1,
+              burn=0, lags=1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
@@ -141,17 +163,24 @@ for(i in 1:1){
   
   h_hat3 = apply(x$h, MARGIN=2, mean)
   # waic
-  WAIC = waic(data=log.ret, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[3] = WAIC
-  
+  WAIC = waic(data=log.ret_train, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
+  waic.criterion[1,3] = WAIC
+  # pds
+  PDS = pds(ht=x$h[,length(log.ret_train)], 
+            at=x$a[,length(log.ret_train)], 
+            theta=theta, 
+            yobs=log.ret_test)
+  score=mean(PDS$pds_star)
+  waic.criterion[2,3]=score
+  y_tilde$pcp = PDS$newy
   ##################
   # fitting model3 #
   ##################
   path = paste0(model.dir, '/exp.stan')
   model_stan = rstan::stan_model(file = path)
   draws = rstan::sampling(model_stan, 
-                         data = list(T=length(log.ret), 
-                                     y=as.numeric(log.ret)),
+                         data = list(T=length(log.ret_train), 
+                                     y=as.numeric(log.ret_train)),
                          chains = 1,
                          warmup = warmup,
                          iter = warmup + iter,
@@ -167,7 +196,7 @@ for(i in 1:1){
   # Plots
   pdf(paste0(out.dir,'/exp.pdf'), width=20, height=10)
   trace_plots(theta,
-              burn = 0, lags = 1,
+              burn=0, lags=1,
               names = c(expression(mu), 
                         expression(phi[h]),
                         expression(sigma[h]),
@@ -190,22 +219,70 @@ for(i in 1:1){
   
   h_hat4 = apply( x$h, MARGIN = 2, mean )
   # waic
-  WAIC = waic(data=log.ret, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[ 4 ] = WAIC
-  
+  WAIC = waic(data=log.ret_train, mut=x$mu_t, st=x$sigma_t)$estimates['waic', 1]
+  waic.criterion[1,4] = WAIC
+  # pds
+  PDS = pds(ht=x$h[,length(log.ret_train)], 
+            at=x$a[,length(log.ret_train)], 
+            theta=theta, 
+            yobs=log.ret_test)
+  score=mean(PDS$pds_star)
+  waic.criterion[2,4]=score
+  y_tilde$exp = PDS$newy
   # Save
   save(
     summary, 
     waic.criterion,
     h_hat1, h_hat2, h_hat3, h_hat4,
-    file = paste0(dir_out, 'nasdaq.RData')
+    file = paste0(out.dir, 'bitcoin.RData')
   )  
 }
 
 summary
-#waic.criterion = rbind(waic.criterion,
-#                       as.numeric(waic.criterion[1, ] == min( waic.criterion)))
-waic.criterion
+signif(waic.criterion, 4)
+
+par(mfrow=c(2,2))
+# static
+y_hat = apply(y_tilde$static, MARGIN=2, mean)
+y_min = apply(y_tilde$static, MARGIN=2, quantile, probs=0.025)
+y_max = apply(y_tilde$static, MARGIN=2, quantile, probs=0.975)
+plot(log.ret_test, xlab = 'Days ahead', main='Static', ylab='',
+     pch=21, col='black', bg='black', 
+     ylim=c(min(y_min), max(y_max)))
+lines(y_hat, type='l')
+lines(y_min, type='l', lty=2)
+lines(y_max, type='l', lty=2)
+#ig
+y_hat = apply(y_tilde$ig, MARGIN=2, mean)
+y_min = apply(y_tilde$ig, MARGIN=2, quantile, probs=0.025)
+y_max = apply(y_tilde$ig, MARGIN=2, quantile, probs=0.975)
+plot(log.ret_test, xlab = 'Days ahead', main='Ig', ylab='',
+     pch=21, col='black', bg='black', ylim=c(min(y_min), max(y_max)))
+lines(y_hat, type='l')
+lines(y_min, type='l', lty=2)
+lines(y_max, type='l', lty=2)
+#pcp
+y_hat = apply(y_tilde$pcp, MARGIN=2, mean)
+y_min = apply(y_tilde$pcp, MARGIN=2, quantile, probs=0.025)
+y_max = apply(y_tilde$pcp, MARGIN=2, quantile, probs=0.975)
+plot(log.ret_test, xlab = 'Days ahead', main='PCP', ylab='',
+     pch=21, col='black', bg='black', ylim=c(min(y_min), max(y_max)))
+lines(y_hat, type='l')
+lines(y_min, type='l', lty=2)
+lines(y_max, type='l', lty=2)
+#exp
+y_hat = apply(y_tilde$exp, MARGIN=2, mean)
+y_min = apply(y_tilde$exp, MARGIN=2, quantile, probs=0.025)
+y_max = apply(y_tilde$exp, MARGIN=2, quantile, probs=0.975)
+plot(log.ret_test, xlab = 'Days ahead', main='Exp', ylab='',
+     pch=21, col='black', bg='black', ylim=c(min(y_min), max(y_max)))
+lines(y_hat, type='l')
+lines(y_min, type='l', lty=2)
+lines(y_max, type='l', lty=2)
+par(mfrow=c(1,1))
+
+
+
 
 # Figure Volatilities
 plot(dates[-1], abs(log.ret), 
