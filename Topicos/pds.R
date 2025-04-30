@@ -1,4 +1,4 @@
-pds=function(ht, at, theta, yobs){
+pds=function(ht, at, theta, yobs, dyn=TRUE){
   
   rtnorm = function(n){
     u = runif(n)
@@ -8,7 +8,12 @@ pds=function(ht, at, theta, yobs){
   mu=theta[1,]
   phi=theta[2,]
   sh=theta[3,]
-  sa=theta[4,]
+  if(dyn){
+    sa=theta[4,]  
+  }else{
+    sa=rep(0,length(mu))
+    at=theta[4,]
+  }
   v=theta[5,]
   
   k=length(yobs)
@@ -22,7 +27,6 @@ pds=function(ht, at, theta, yobs){
     for(i in 1:N){
       newh[i] = mu[i] + phi[i]*(ht[i]-mu[i]) + sh[i]*rnorm(1)
       newU[i] = rgamma(1, shape=0.5*v[i], rate=0.5*v[i])
-      if(is.na(newU[i])) cat( v[i])
       newW[i] = rtnorm(1)
       newa[i] = at[i] + sa[i]*rnorm(1)
       
