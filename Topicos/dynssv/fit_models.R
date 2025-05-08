@@ -22,8 +22,8 @@ colnames(waic.criterion) = c('ig', 'pcp', 'exp')
 waic.criterion 
 
 
-warmup=5e1
-iter=2e1
+warmup=5e4
+iter=2e3
 log.ret = log.ret-mean(log.ret)
 
 for(i in 1:3){
@@ -164,13 +164,6 @@ for(i in 1:3){
 
 summary
 waic.criterion
-
-
-
-
-
-
-
 
 
 # Figure Volatilities
