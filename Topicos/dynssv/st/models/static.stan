@@ -42,8 +42,8 @@ model {
   s2_h ~ inv_gamma( 2.5, 0.025 );
   
   // Prioris a
-  delta ~ uniform(-1, 1);
-  //a ~ normal(0, sqrt(10));
+  k ~ gamma(0.1, 0.1);
+  a ~ double_exponential(0, 1/k);
 
   //tails
   v ~ gamma(12, .8);
