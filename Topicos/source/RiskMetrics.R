@@ -1,4 +1,4 @@
-RiskMetrics=function(ht, at, theta, yobs, alpha=0.05, model){
+RiskMetrics=function(ht, at=NULL, theta, yobs, alpha=0.05, model, dyn=TRUE){
   
   # model=c(sn, st, ss) 
   rtnorm = function(n){
@@ -6,16 +6,20 @@ RiskMetrics=function(ht, at, theta, yobs, alpha=0.05, model){
     return(qnorm(0.5*(u+1)))
   }
   
+  N=length(ht)
   mu=theta[1,]
   phi=theta[2,]
   sh=theta[3,]
-  sa=theta[4,]  
+  if(dyn){
+    sa=theta[4,]  
+  }else{
+    at=theta[4,]
+    sa=rep(0, N)
+  }
   if(model != 'sn') v=theta[5,]
   
-  N=length(ht)
   newy=newa=newW=newU=newh=delta=k1=k2=omega=gammat=mut=st=numeric(N)
   var=es=matrix(0,length(alpha),N)
-  #es=numeric(N)
   lpdsstar=0
   
   for(i in 1:N){
