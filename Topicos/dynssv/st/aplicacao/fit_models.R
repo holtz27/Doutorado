@@ -1,17 +1,19 @@
 source('https://raw.githubusercontent.com/holtz27/svmsmn/main/source/figures.R')
 source('https://raw.githubusercontent.com/holtz27/svmsmn/refs/heads/main/source/num_analisys.R')
-source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/Topicos/source/waic.R')
+source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/Topicos/source/criterion.R')
 
 # compiling stan models
 model.dir = '~/topicos/st/models'
 out.dir = '~/topicos/st/aplication'
 
 summary = list('static','ig', 'pcp', 'exp')
-waic.criterion = matrix(0, nrow=1, ncol=4)
-colnames(waic.criterion) = c('static', 'ig', 'pcp', 'exp')
+info.criterion = matrix(0, nrow=3, ncol=4)
+colnames(info.criterion) = c('static', 'ig', 'pcp', 'exp')
+row.names(info.criterion) = c('waic', 'loo', 'dic')
 
+log.ret=log.ret-mean(log.ret)
 warmup = 3e1
-iter = 2e1
+iter = 2e3
 
 for(i in 1:1){
   
@@ -46,9 +48,12 @@ for(i in 1:1){
   dev.off()
   h_hat1=apply(x$h, MARGIN=2, mean)
   # waic
-  WAIC=waic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[1,1]=WAIC
-  
+  WAIC = waic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['waic', 1]
+  LOO = loo(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['looic', 1]
+  DIC = dic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$DIC
+  info.criterion[1,1]=WAIC
+  info.criterion[2,1]=LOO
+  info.criterion[3,1]=DIC
   ##################
   # fitting model1 #
   ##################
@@ -94,8 +99,11 @@ for(i in 1:1){
   h_hat2 = apply(x$h, MARGIN = 2, mean)
   # waic
   WAIC = waic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[1,2] = WAIC
-  
+  LOO = loo(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['looic', 1]
+  DIC = dic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$DIC
+  info.criterion[1,2]=WAIC
+  info.criterion[2,2]=LOO
+  info.criterion[3,2]=DIC
   ##################
   # fitting model2 #
   ##################
@@ -142,7 +150,11 @@ for(i in 1:1){
   h_hat3 = apply(x$h, MARGIN=2, mean)
   # waic
   WAIC = waic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[1,3] = WAIC
+  LOO = loo(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['looic', 1]
+  DIC = dic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$DIC
+  info.criterion[1,3]=WAIC
+  info.criterion[2,3]=LOO
+  info.criterion[3,3]=DIC
   
   ##################
   # fitting model3 #
@@ -191,19 +203,35 @@ for(i in 1:1){
   h_hat4 = apply( x$h, MARGIN = 2, mean )
   # waic
   WAIC = waic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['waic', 1]
-  waic.criterion[1,4] = WAIC
+  LOO = loo(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$estimates['looic', 1]
+  DIC = dic(data=log.ret, mu_t=x$mu_t, sigma_t=x$sigma_t)$DIC
+  info.criterion[1,4]=WAIC
+  info.criterion[2,4]=LOO
+  info.criterion[3,4]=DIC
   
   # Save
-  save(
-    summary, 
-    waic.criterion,
-    h_hat1, h_hat2, h_hat3, h_hat4,
-    file = paste0(out.dir, 'bitcoin.RData')
-  )  
+  save(summary, info.criterion,h_hat1, h_hat2, h_hat3, h_hat4,
+       file=paste0(out.dir, 'bitcoin.RData'))  
 }
 
 summary
-waic.criterion
+info.criterion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Figure Volatilities
