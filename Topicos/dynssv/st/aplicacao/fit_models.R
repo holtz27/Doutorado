@@ -88,8 +88,12 @@ for(i in 1:1){
   pdf(paste0(out.dir, '/ig_a.pdf'), 
       width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
-  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
-  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  chain = coda::as.mcmc(x$a)
+  i = coda::HPDinterval(chain)
+  a_min=i[,1]
+  a_max=i[,2]
+  #a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  #a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
   plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
   lines( a_min, type = 'l', lty = 2 )
   lines( a_max, type = 'l', lty = 2 )
@@ -139,8 +143,12 @@ for(i in 1:1){
   pdf(paste0(out.dir, '/pcp_a.pdf'), 
       width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
-  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
-  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  chain = coda::as.mcmc(x$a)
+  i = coda::HPDinterval(chain)
+  a_min=i[,1]
+  a_max=i[,2]
+  #a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  #a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
   plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
   lines( a_min, type = 'l', lty = 2 )
   lines( a_max, type = 'l', lty = 2 )
@@ -192,8 +200,12 @@ for(i in 1:1){
   pdf(paste0(out.dir, '/exp_a.pdf'), 
        width = 20, height = 10 )
   a_hat = apply( x$a, MARGIN = 2, mean )
-  a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
-  a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
+  chain = coda::as.mcmc(x$a)
+  i = coda::HPDinterval(chain)
+  a_min=i[,1]
+  a_max=i[,2]
+  #a_min = apply( x$a, MARGIN = 2, quantile, probs = 0.025 )
+  #a_max = apply( x$a, MARGIN = 2, quantile, probs = 0.975 )
   plot( a_hat, type = 'l' , ylim = c(min(a_min), max(a_max)) )
   lines( a_min, type = 'l', lty = 2 )
   lines( a_max, type = 'l', lty = 2 )
