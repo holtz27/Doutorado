@@ -1,7 +1,6 @@
-# Obtenha os dados do yen
 sp500 = quantmod::getSymbols('^GSPC', 
                            src = 'yahoo', 
-                           from = '2005-01-03', to = '2009-12-09',
+                           from = '2007-01-03', to = '2020-10-01',
                            auto.assign = FALSE)
 sp500 = na.omit( sp500 )
 sp500 = data.frame( sp500 )
@@ -16,9 +15,9 @@ library(ggplot2)
 df = data.frame( Return = log.ret, Tempo = dates[-1] )
 
 g = ggplot(df) + geom_line(aes(x = Tempo, y = Return))
-g = g + scale_x_date(date_breaks = "36 month", date_labels = "%b %Y")
+g = g + scale_x_date(date_breaks = "28 month", date_labels = "%b %Y")
 g = g + theme_test() + theme(axis.title.y = element_text(size = 18),
-                             axis.text.x = element_text(size = 16),
+                             axis.text.x = element_text(size = 12),
                              axis.text.y = element_text(size = 18))
 g = g + xlab('')
 h = ggplot( df, aes(Return) )
