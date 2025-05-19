@@ -1,4 +1,4 @@
-svm.viterbi = function(y, theta_hat, m, gmax){
+svm.viterbi = function(y, theta_hat, m, gmax, svmn=FALSE){
   n = length(y)
   p = theta_hat
   K = m+1
@@ -14,7 +14,11 @@ svm.viterbi = function(y, theta_hat, m, gmax){
   Gamma = Gamma/apply(Gamma,1,sum) 
   xx = 
   yy = c(y0,y[1:(n-1)])
-  allprobs = outer(xx, sey, "fillallprobs", beta=p[1:3], nu=p[7], yy)
+  if(svmn){
+    allprobs = outer(xx, sey, "fillallprobs", beta=p[1:3], yy)
+  }else{ 
+    allprobs = outer(xx, sey, "fillallprobs", beta=p[1:3], nu=p[7], yy)
+  }
   delta = dnorm(bs, p[4], p[6]/sqrt(1-p[5]^2))*intlen
   
   # defining xi
