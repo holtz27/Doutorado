@@ -5,12 +5,11 @@
 #include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <RcppParallel.h>
-#include <cfloat> 
 
 using namespace Rcpp;
 using namespace RcppParallel;
 
-struct PdfVG2Worker : public Worker {
+struct PdfVG2Worker : public Worker{
   const RVector<double> y;
   const double nu;
   RVector<double> vgdens;
@@ -32,27 +31,11 @@ struct PdfVG2Worker : public Worker {
         vgdens[i] = 0.5*std::sqrt(nu/M_PI)*gsl_sf_gamma(0.5*(nu-1))/gsl_sf_gamma(0.5*nu);
       }else{
         
-        if(std::abs(yi)*std::sqrt(nu) > 700.0){
-          vgdens[i] = -std::abs(yi)*std::sqrt(nu) + 0.5*std::log(M_PI/2.0); //DBL_MIN; //0.0; // evitar overflow/underflow em exp()
-          vgdens[i] += -0.5*std::log(std::abs(yi)*std::sqrt(nu));
-        }else{
-          double bessel_val = gsl_sf_bessel_Knu(0.5*(nu-1), std::abs(yi)*std::sqrt(nu));
-          vgdens[i] = c*std::pow(std::abs(yi), 0.5*(nu-1))*bessel_val;
-        }
+        //double bessel_val = gsl_sf_bessel_Knu(0.5*(nu-1), std::abs(yi)*std::sqrt(nu));
+        double bessel_val = gsl_sf_bessel_lnKnu(0.5*(nu-1), std::abs(yi)*std::sqrt(nu));
+        vgdens[i] = c*std::pow(std::abs(yi), 0.5*(nu-1))*std::exp(bessel_val);
         
       }
-      
-      //if (std::isnan(vgdens[i])) {
-      //Rcout << "warnings: y = " << yi << " nu = " << nu << std::endl;
-      //warning("vgdens result was NaN");
-      //vgdens[i] = 0.0;
-      //}
-      
-      //if (std::isinf(vgdens[i])) {
-      //Rcout << "y = " << yi << " nu = " << nu << std::endl;
-      //stop("vgdens must be finite!");
-      //}
-      
     }
   }
 };
