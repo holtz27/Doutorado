@@ -189,12 +189,26 @@ plot(abs(y), type='l', col='gray')
 lines(exp(0.5*h_hat))
 
 ### -log p(y|\theta)
-theta_hat=svm.pn2pw(beta=Results$Results[,1][1:3],
-                    mu=Results$Results[,1][4],
-                    phi=Results$Results[,1][5],
-                    sigma=Results$Results[,1][6],
-                    nu=Results$Results[,1][7])
-svmvg.mllk(parvect=theta_hat, y=y, y0=y0, m=m, gmax=gmax)
+# DIC
+theta_hat=apply(X, 2, mean)
+D=2*svmvg.mllk(parvect=theta_hat,y=y,y0=y0,m=m,gmax=gmax)
+D
+
+# Evaluating \bar{D(\theta)}
+Dbar=0
+for(j in 1:n){
+  pv=X[j,]
+  Dbar=Dbar+Weigth[j,1]*svmvg.mllk(parvect=pv,y=y,y0=y0,m=m,gmax=gmax)
+}
+Dbar=2*Dbar
+Dbar
+
+pd=Dbar-D
+DIC=D+2*pd
+DIC
+
+LPS=0.5*D/length(y)
+LPS
 
 
 
