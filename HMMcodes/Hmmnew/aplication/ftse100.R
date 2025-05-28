@@ -1,14 +1,14 @@
-sp500 = quantmod::getSymbols('^GSPC', 
-                           src = 'yahoo', 
-                           from = '1998-01-03', to = '2018-10-01',
-                           auto.assign = FALSE)
-sp500 = na.omit( sp500 )
-sp500 = data.frame( sp500 )
-dates = as.Date( row.names( sp500 ), '%Y-%m-%d' )
-sp500 = sp500[, 'GSPC.Adjusted']
+ftse100 = quantmod::getSymbols('^FTSE', 
+                              src = 'yahoo', 
+                              from = '1998-01-03', to = '2018-10-01',
+                              auto.assign = FALSE)
+ftse100 = na.omit(ftse100)
+ftse100 = data.frame(ftse100)
+dates = as.Date(row.names(ftse100), '%Y-%m-%d')
+ftse100 = ftse100[, 'FTSE.Adjusted']
 #View(yen)
-T = length(sp500)
-log.ret = 100*(log(sp500[2:T])-log(sp500[1:(T-1)]))
+T = length(ftse100)
+log.ret = 100*(log(ftse100[2:T])-log(ftse100[1:(T-1)]))
 T = length(log.ret)
 # Plots
 library(ggplot2)
@@ -41,16 +41,16 @@ round(data_summary, digits=3)
 ################################################################################
 # SVM-N
 source('~/Documentos/hmm/aplic_n.R')
-save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/sp500/n.RData')
+save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ftse100/n.RData')
 
 # SVM-t
 source('~/Documentos/hmm/aplic_t.R')
-save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/sp500/t.RData')
+save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ftse100/t.RData')
 
 # SVM-S
 source('~/Documentos/hmm/aplic_s.R')
-save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/sp500/s.RData')
+save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ftse100/s.RData')
 
 # SVM-VG
 source('~/Documentos/hmm/aplic_vg.R')
-save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/sp500/vg.RData')
+save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ftse100/vg.RData')
