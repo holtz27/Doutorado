@@ -1,8 +1,9 @@
-// [[Rcpp::depends(RcppParallel)]]
+// [[Rcpp::depends(RcppArmadillo, RcppGSL, RcppParallel)]]
 
 #include <Rcpp.h>
 #include <RcppParallel.h>
-#include <Rmath.h>
+
+#include <gsl/gsl_randist.h>
 
 using namespace Rcpp;
 using namespace RcppParallel;
@@ -20,8 +21,8 @@ struct PdfS2Worker : public Worker {
     
     for (std::size_t i = begin; i < end; i++){
       
-      result[i] = R::dt(y[i], df, 0);
-      
+      //result[i] = R::dt(y[i], df, 0);
+      result[i] = gsl_ran_tdist_pdf(y[i], df);
     }
   }
 };
