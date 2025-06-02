@@ -2,8 +2,8 @@
 #rm(list=ls(all=TRUE))
 library(parallel)
 library(mvtnorm)
-Rcpp::sourceCpp("~/Documentos/hmm/mlogLk_Rcpp.cpp")
-Rcpp::sourceCpp("~/Documentos/hmm/pdf_n.cpp")
+Rcpp::sourceCpp("~/HMMnew/aplication/mlogLk_Rcpp.cpp")
+Rcpp::sourceCpp("~/HMMnew/aplication/pdf_n.cpp")
 ### Viterbi
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/HMMcodes/source/svm.viterbi.R')
 ### Diagnostic
@@ -108,6 +108,10 @@ y0=0.2
 m=200
 gmax=5.0
 y=log.ret
+h=1e3
+
+ytrain=y[1:(length(y)-h)]
+ytest=y[(length(y)-h+1):length(y)]
 
 try({
   time = Sys.time()
@@ -118,7 +122,7 @@ try({
   parvect0 = svm.pn2pw(beta0, mu0, phi0, sigma0)
   while( any(eigenvalues <= 0) && cont<5 ){
     
-    optim_res = svmn.map(y=y,m=m, parvect0=parvect0, y0=y0, gmax=gmax)
+    optim_res = svmn.map(y=ytrain,m=m, parvect0=parvect0, y0=y0, gmax=gmax)
     H1 = signif(solve(optim_res$hessian), 6)
     eigenvalues = eigen(H1, only.values=TRUE)$values
     parvect0 = optim_res$mode
@@ -134,13 +138,13 @@ try({
     map = optim_res$mode
     ##########################################################################
     # Weigths Evaluation
-    n = 1e3
+    n=1e3
     X=rmvnorm(n, map, H1)
     #X=rmvt(n, delta=map, sigma=H1, df=df, type='shifted')
     Weigth=array(0,dim=c(n,1))
     for(j in 1:n){
       Weigth[j,1]=exp(k
-                      -svmn.posterior(parvect=X[j,],y=y,y0=y0,m=m,gmax=gmax)
+                      -svmn.posterior(parvect=X[j,],y=ytrain,y0=y0,m=m,gmax=gmax)
                       -dmvnorm(X[j,],mean=map,sigma=H1,log=TRUE)
                       #-dmvt(X[j,],delta=map,sigma=H1,type='shifted',log=TRUE, df=df)
       )
@@ -151,6 +155,11 @@ try({
     }else{
       stop('Error normalize constante weigths!')
     }
+    ### Resample
+    indx=sample(1:n, prob=Weigth, replace=TRUE)
+    X=X[indx,]
+    Weigth=rep(1/n, n)
+    #
     Results=ISdiag(Weigth=Weigth, X=X, nu.lower=Inf)
     times=as.numeric(Sys.time()-time, units='mins')
   }
@@ -160,8 +169,8 @@ times
 
 h_hat=svm.viterbi(y=y,theta_hat=Results$Results[,1],m=m,gmax=gmax, svmn=TRUE)
 plot(abs(y), type='l', col='gray')
-lines(exp(0.5*h_hat))
-
+lines(exp(0.5*h_hat), lwd=2)
+##############################
 ### -log p(y|\theta)
 # DIC
 theta_hat=apply(X, 2, mean)
@@ -172,7 +181,7 @@ D
 Dbar=0
 for(j in 1:n){
   pv=X[j,]
-  Dbar=Dbar+Weigth[j,1]*svmn.mllk(parvect=pv,y=y,y0=y0,m=m,gmax=gmax)
+  Dbar=Dbar+Weigth[j]*svmn.mllk(parvect=pv,y=y,y0=y0,m=m,gmax=gmax)
 }
 Dbar=2*Dbar
 Dbar
@@ -184,7 +193,101 @@ DIC
 # Log Predictive Score
 LPS=0.5*D/length(y)
 LPS
+################################################################################
+SVMn.HMM.lalpha=function(x, m, gbmax, pvect, y0){
+  
+  nx <- length(x)
+  yy = c(y0, x[1:(nx-1)])
+  p<-svm.pw2pn(pvect)
+  
+  lalpha <- matrix(NA,m,nx)
+  K <- m+1
+  gb <- seq(-gbmax,gbmax,length=K)
+  g <- (gb[-1]+gb[-K])*0.5             
+  beg <-exp(g/2)   
+  gamma <- matrix(0,m,m)
+  E=p$mu+p$phi*(g-p$mu)
+  intlen <- gb[2]-gb[1]
+  for (i in 1:m){
+    goo <- dnorm(g,E[i],p$sigma)*intlen
+    gamma[i,] <- goo/sum(goo)
+  }
+  lscale=0
+  delta <- dnorm(g,p$mu,p$sigma/sqrt(1-p$phi^2))*intlen
+  for (i in 1:nx){
+    if (i==1) foo <- delta*1/beg*dnorm((x[1]-p$beta[1]-p$beta[2]*yy[1]-p$beta[3]*beg^2)/beg)
+    if ( i>1) 
+      foo <- foo%*%gamma*1/beg*dnorm((x[i]-p$beta[1]-p$beta[2]*yy[i]-p$beta[3]*beg^2)/beg)
+    lscale <- lscale+log(sum(foo));
+    foo <- foo/sum(foo)
+    lalpha[,i] <- log(foo)+lscale 
+  }
+  return(lalpha)
+}
+SVMn.HMM.quantiles=function(x, res.time, m, gbmax, pvect, lalpha, y0){
+  nx = length(x)
+  yy = c(y0, x[1:(nx-1)])
+  K = m+1
+  p=svm.pw2pn(pvect)
+  gb = seq(-gbmax,gbmax,length=K)
+  g = (gb[-1]+gb[-K])*0.5             
+  beg = exp(g/2)   
+  gamma = matrix(0,m,m)
+  E = p$mu+p$phi*(g-p$mu)
+  intlen = gb[2]-gb[1]
+  for(i in 1:m){
+    goo = dnorm(g,E[i],p$sigma)*intlen
+    gamma[i,] = goo/sum(goo)
+  }
+  c=max(lalpha[,res.time-1])   # to avoid numerical underflow
+  a=exp(lalpha[,res.time-1]-c) # scalar factor cancels in Pro computation below
+  npsr=t(a)%*%(gamma/sum(a))%*%pnorm((x[res.time]-p$beta[1]-p$beta[2]*yy[res.time]-p$beta[3]*beg^2)/beg)
+  
+  return(npsr)
+}
+lalphasvn=SVMn.HMM.lalpha(x=ytrain, m=m, gbmax=gmax, pvect=theta_hat, y0=y0)
 
+psressvn=rep(NA,length(ytest))
+for(k in 1:length(ytest)){ 
+  # note that the function 'SV.HMM.quantiles' could alternatively be written 
+  # such that no loop would be required here, but I didn't bother since it's 
+  # fast enough as it stands
+  psressvn[k]=SVMn.HMM.quantiles(y, res.time=length(ytest)+k, m=m, gbmax=gmax, 
+                                 pvect=theta_hat, lalphasvn, y0=y0)
+}
+
+# check goodness-of-fit of model:
+#qqnorm(qnorm(psressvn)) # 'qnorm(psres)', the one-step-ahead forecast 
+#pseudo-residuals, under the model fitted to the calibration data - if the model
+#fits well, then these will be roughly normally distributed 
+
+# check goodness-of-fit of model:
+# # 'qnorm(psres)', the one-step-ahead forecast pseudo-residuals, under the 
+# model fitted to the calibration data - if the model fits well, then these will 
+# be roughly normally distributed 
+qqnorm(qnorm(psressvn), main='SVM-N') 
+qqline(qnorm(psressvn))
+require(tseries)
+pvalue=jarque.bera.test(qnorm(psressvn))$p.value
+if(pvalue>0.05){
+  cat('Not reject the hypothesis of normality of the residuals at the 5% nivel.')
+}else{
+  cat('Reject the hypothesis of normality of the residuals at the 5% nivel.')
+}
+
+# now backtesting
+# as an example, check how many of the observations in the validation sample are
+# smaller than the 1%/5%/10%/50% quantiles of the one-step-ahead forecast 
+# distributions, under the fitted model
+# should be approximately 0.01*length(obs.val)
+VaR=c(sum(psressvn<0.01), 0.01*length(ytest))
+VaR=rbind(VaR, c(sum(psressvn<0.05), 0.05*length(ytest)))
+VaR=rbind(VaR, c(sum(psressvn<0.1), 0.1*length(ytest)))
+VaR=rbind(VaR, c(sum(psressvn<0.5), 0.5*length(ytest)))
+row.names(VaR)=c('0.01', '0.05', '0.10', '0.50')
+colnames(VaR)=c('Observed', 'Expected')
+VaR
+################################################################################
 #save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ibovespa/n.RData')
 
 
