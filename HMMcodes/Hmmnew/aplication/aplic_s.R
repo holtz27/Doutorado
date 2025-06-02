@@ -1,8 +1,8 @@
 ################################################################################
 library(parallel)
 library(mvtnorm)
-Rcpp::sourceCpp("~/Documentos/hmm/mlogLk_Rcpp.cpp")
-Rcpp::sourceCpp("~/Documentos/hmm/pdf_s.cpp")
+Rcpp::sourceCpp("~/HMMnew/aplication/mlogLk_Rcpp.cpp")
+Rcpp::sourceCpp("~/HMMnew/aplication/pdf_s.cpp")
 ### Viterbi
 source('https://raw.githubusercontent.com/holtz27/Doutorado/refs/heads/main/HMMcodes/source/svm.viterbi.R')
 ### Diagnostic
@@ -162,6 +162,10 @@ y0=0.2
 m=200
 gmax=5.0
 y=log.ret
+h=1e3
+
+ytrain=y[1:(length(y)-h)]
+ytest=y[(length(y)-h+1):length(y)]
 
 try({
   time = Sys.time()
@@ -205,6 +209,11 @@ try({
     }else{
       stop('Error normalize constante weigths!')
     }
+    ### Resample
+    indx=sample(1:n, prob=Weigth, replace=TRUE)
+    X=X[indx,]
+    Weigth=rep(1/n, n)
+    #
     Results = ISdiag(Weigth=Weigth, X=X, nu.lower=0)
     times = as.numeric(Sys.time()-time, units='mins')
   }
@@ -226,7 +235,7 @@ D
 Dbar=0
 for(j in 1:n){
   pv=X[j,]
-  Dbar=Dbar+Weigth[j,1]*svms.mllk(parvect=pv,y=y,y0=y0,m=m,gmax=gmax)
+  Dbar=Dbar+Weigth[j]*svms.mllk(parvect=pv,y=y,y0=y0,m=m,gmax=gmax)
 }
 Dbar=2*Dbar
 Dbar
@@ -238,5 +247,109 @@ DIC
 # Log Predictive Score
 LPS=0.5*D/length(y)
 LPS
+################################################################################
+cdf_s=function(x, nu){
+  
+  n=length(x)
+  z=numeric(n)
+  for(i in 1:n){
+    z[i]=integrate(pdf_s, lower=-Inf, upper=x[i], nu)$value  
+  }
+  return(z)
+}
+SVMs.HMM.lalpha=function(x, m, gbmax, pvect, y0){
+  
+  nx <- length(x)
+  yy = c(y0, x[1:(nx-1)])
+  p<-svm.pw2pn(pvect)
+  
+  lalpha <- matrix(NA,m,nx)
+  K <- m+1
+  gb <- seq(-gbmax,gbmax,length=K)
+  g <- (gb[-1]+gb[-K])*0.5             
+  beg <-exp(g/2)   
+  gamma <- matrix(0,m,m)
+  E=p$mu+p$phi*(g-p$mu)
+  intlen <- gb[2]-gb[1]
+  for (i in 1:m){
+    goo <- dnorm(g,E[i],p$sigma)*intlen
+    gamma[i,] <- goo/sum(goo)
+  }
+  lscale=0
+  delta <- dnorm(g,p$mu,p$sigma/sqrt(1-p$phi^2))*intlen
+  for (i in 1:nx){
+    if (i==1) foo <- delta*1/beg*pdf_s((x[1]-p$beta[1]-p$beta[2]*yy[1]-p$beta[3]*beg^2)/beg, p$nu)
+    if ( i>1) 
+      foo <- foo%*%gamma*1/beg*pdf_s((x[i]-p$beta[1]-p$beta[2]*yy[i]-p$beta[3]*beg^2)/beg, p$nu)
+    lscale <- lscale+log(sum(foo));
+    foo <- foo/sum(foo)
+    lalpha[,i] <- log(foo)+lscale 
+  }
+  return(lalpha)
+}
+SVMs.HMM.quantiles=function(x, res.time, m, gbmax, pvect, lalpha, y0){
+  nx = length(x)
+  yy = c(y0, x[1:(nx-1)])
+  K = m+1
+  p=svm.pw2pn(pvect)
+  gb = seq(-gbmax,gbmax,length=K)
+  g = (gb[-1]+gb[-K])*0.5             
+  beg = exp(g/2)   
+  gamma = matrix(0,m,m)
+  E = p$mu+p$phi*(g-p$mu)
+  intlen = gb[2]-gb[1]
+  for(i in 1:m){
+    goo = dnorm(g,E[i],p$sigma)*intlen
+    gamma[i,] = goo/sum(goo)
+  }
+  c=max(lalpha[,res.time-1])   # to avoid numerical underflow
+  a=exp(lalpha[,res.time-1]-c) # scalar factor cancels in Pro computation below
+  npsr=t(a)%*%(gamma/sum(a))%*%cdf_s((x[res.time]-p$beta[1]-p$beta[2]*yy[res.time]-p$beta[3]*beg^2)/beg, p$nu)
+  
+  return(npsr)
+}
+lalphasvms=SVMs.HMM.lalpha(x=ytrain, m=m, gbmax=gmax, pvect=theta_hat, y0=y0)
 
-#save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ibovespa/s.RData')
+psressvms=rep(NA,length(ytest))
+for(k in 1:length(ytest)){ 
+  # note that the function 'SV.HMM.quantiles' could alternatively be written 
+  # such that no loop would be required here, but I didn't bother since it's 
+  # fast enough as it stands
+  psressvms[k]=SVMs.HMM.quantiles(y, res.time=length(ytest)+k, m=m, gbmax=gmax, 
+                                  pvect=theta_hat, lalphasvms, y0=y0)
+}
+# check goodness-of-fit of model:
+#qqnorm(qnorm(psressvn)) # 'qnorm(psres)', the one-step-ahead forecast 
+#pseudo-residuals, under the model fitted to the calibration data - if the model
+#fits well, then these will be roughly normally distributed 
+
+# check goodness-of-fit of model:
+# # 'qnorm(psres)', the one-step-ahead forecast pseudo-residuals, under the 
+# model fitted to the calibration data - if the model fits well, then these will 
+# be roughly normally distributed 
+qqnorm(qnorm(psressvmt), main='SVM-S') 
+qqline(qnorm(psressvmt))
+require(tseries)
+pvalue=jarque.bera.test(qnorm(psressvmt))$p.value
+if(pvalue>0.05){
+  cat('Not reject the hypothesis of normality of the residuals at the 5% nivel.')
+}else{
+  cat('Reject the hypothesis of normality of the residuals at the 5% nivel.')
+}
+
+# now backtesting
+# as an example, check how many of the observations in the validation sample are
+# smaller than the 1%/5%/10%/50% quantiles of the one-step-ahead forecast 
+# distributions, under the fitted model
+# should be approximately 0.01*length(obs.val)
+VaR=c(sum(psressvmt<0.01), 0.01*length(ytest))
+VaR=rbind(VaR, c(sum(psressvmt<0.05), 0.05*length(ytest)))
+VaR=rbind(VaR, c(sum(psressvmt<0.1), 0.1*length(ytest)))
+VaR=rbind(VaR, c(sum(psressvmt<0.5), 0.5*length(ytest)))
+row.names(VaR)=c('0.01', '0.05', '0.10', '0.50')
+colnames(VaR)=c('Observed', 'Expected')
+VaR
+################################################################################
+save(Results, times, h_hat, DIC, LPS, VaR, 
+     file='~/Documentos/hmm/ibovespa/svms.RData')
+

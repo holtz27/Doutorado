@@ -288,6 +288,7 @@ row.names(VaR)=c('0.01', '0.05', '0.10', '0.50')
 colnames(VaR)=c('Observed', 'Expected')
 VaR
 ################################################################################
-#save(Results, times, h_hat, DIC, LPS, file='~/Documentos/hmm/ibovespa/n.RData')
+save(Results, times, h_hat, DIC, LPS, VaR, 
+     file='~/Documentos/HMMnew/aplication/sp500/svmn.RData')
 
 
