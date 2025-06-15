@@ -17,89 +17,32 @@ quantile = function(x, weights, probs=c(0.025, 0.5, 0.975)){
 ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf){
   
   if(nu.lower == Inf){
-    p <- function(parvect){
+    p=function(parvect){
       
-      # Inicializar beta
-      beta <- array(0, dim = 3)
-      beta[1] <- parvect[1]
-      if (parvect[2] > log_double_xmax) {
-        beta[2] <- 1.0 - double_eps
-      } else if (parvect[2] < -log_double_xmax) {
-        beta[2] <- -1.0 + double_eps
-      } else {
-        beta[2] <- (exp(parvect[2]) - 1) / (exp(parvect[2]) + 1)
-      }
-      beta[3] <- parvect[3]
-      
-      mu <- parvect[4]
-      if (parvect[5] > log_double_xmax) {
-        phi <- 1.0 - double_eps
-      } else if (parvect[5] < -log_double_xmax) {
-        phi <- -1.0 + double_eps
-      } else {
-        phi <- (exp(parvect[5]) - 1) / (exp(parvect[5]) + 1)
-      }
-      
-      if (parvect[6] > log_double_xmax) {
-        sigma <- double_xmax
-      } else if (parvect[6] < -log_double_xmax) {
-        sigma <- double_xmin
-      } else {
-        sigma <- exp(parvect[6])
-      }
+      beta=array(0,dim=3)
+      beta[1]= parvect[1]
+      beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
+      beta[3]=parvect[3]
+      mu=parvect[4]
+      phi = (exp(parvect[5])-1)/(exp(parvect[5])+1)
+      sigma = exp(parvect[6])
       
       return(c(beta, mu, phi, sigma))
     }
   }else{
-    p <- function(parvect, nu.lower, nu.upper){
+    p=function(parvect, nu.lower=2, nu.upper=40){
       
-      # Inicializar beta
-      beta <- array(0, dim = 3)
-      beta[1] <- parvect[1]
-      if (parvect[2] > log_double_xmax) {
-        beta[2] <- 1.0 - double_eps
-      } else if (parvect[2] < -log_double_xmax) {
-        beta[2] <- -1.0 + double_eps
-      } else {
-        beta[2] <- (exp(parvect[2]) - 1) / (exp(parvect[2]) + 1)
-      }
-      beta[3] <- parvect[3]
-      
-      mu <- parvect[4]
-      if (parvect[5] > log_double_xmax) {
-        phi <- 1.0 - double_eps
-      } else if (parvect[5] < -log_double_xmax) {
-        phi <- -1.0 + double_eps
-      } else {
-        phi <- (exp(parvect[5]) - 1) / (exp(parvect[5]) + 1)
-      }
-      
-      if (parvect[6] > log_double_xmax) {
-        sigma <- double_xmax
-      } else if (parvect[6] < -log_double_xmax) {
-        sigma <- double_xmin
-      } else {
-        sigma <- exp(parvect[6])
-      }
-      
-      # Verificações para nu
-      if(is.finite(nu.upper)){
-        if (parvect[7] > log_double_xmax){
-          nu = nu.upper
-        } else if (parvect[7] < -log_double_xmax){
-          nu = nu.lower
-        } else {
-          nu = (nu.upper*exp(parvect[7])+nu.lower)/(1+exp(parvect[7]))
-        }
-      }else{
-        if (parvect[7] > log_double_xmax){
-          nu = double_xmax
-        } else if (parvect[7] < -log_double_xmax){
-          nu = double_xmin
-        } else {
-          nu = exp(parvect[7]) + nu.lower
-        }
-      }
+      beta=array(0,dim=3)
+      beta[1]= parvect[1]
+      beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
+      beta[3]=parvect[3]
+      mu=parvect[4]
+      phi = (exp(parvect[5])-1)/(exp(parvect[5])+1)
+      sigma = exp(parvect[6])
+    
+      #nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
+      alpha=0.1
+      nu=0.5*((nu.upper-nu.lower)*tanh(0.5*alpha*parvect[7])+(nu.upper+nu.lower))
       
       return(c(beta, mu, phi, sigma, nu))
     }
