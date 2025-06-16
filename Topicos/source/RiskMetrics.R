@@ -65,9 +65,8 @@ RiskMetrics=function(ht, at=NULL, theta, yobs, alpha=0.05, model, dyn=TRUE){
     lpdsstar=lpdsstar+dnorm(yobs, mut[i], st[i])
   }
   #MSE
-  bias=bias
-  rmse=rmse
-  rmse=sqrt(rmse)   
+  bias=bias/N
+  rmse=sqrt(rmse/N)   
   # LPDS*
   lpdsstar=lpdsstar/N 
   lpdsstar=log(lpdsstar)
