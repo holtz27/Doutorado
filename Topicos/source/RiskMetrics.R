@@ -17,10 +17,11 @@ RiskMetrics=function(ht, at=NULL, theta, yobs, alpha=0.05, model, dyn=TRUE){
     sa=rep(0, N)
   }
   if(model != 'sn') v=theta[5,]
-  
-  newy=newa=newW=newU=newh=delta=k1=k2=omega=gammat=mut=st=numeric(N)
-  var=es=matrix(0,length(alpha),N)
-  lpdsstar=0
+  k=1e3
+  newy=numeric(k)
+  newY=newa=newW=newU=newh=delta=k1=k2=omega=gammat=mut=st=numeric(N)
+  var=es=matrix(0,length(alpha), N)
+  lpdsstar=bias=rmse=0
   
   for(i in 1:N){
     newh[i] = mu[i] + phi[i]*(ht[i]-mu[i]) + sh[i]*rnorm(1)
@@ -49,20 +50,31 @@ RiskMetrics=function(ht, at=NULL, theta, yobs, alpha=0.05, model, dyn=TRUE){
     mut[i] = gammat[i] + omega[i]*delta[i]*newW[i]*exp(0.5*newh[i])/sqrt(newU[i])
     st[i] = omega[i]*sqrt(1-delta[i]^2)*exp(0.5*newh[i])/sqrt(newU[i])
     # y_T+1
-    newy=mut[i]+st[i]*rnorm(1e3)
+    newy=mut[i]+st[i]*rnorm(k)
+    newY[i]=mean(newy)
     # VaR
     var[,i]=quantile(newy, probs=alpha)
     # ES
     for(j in 1:length(alpha)){
       es[j,i]=mean(newy[which(newy<var[j,i])])  
     }
+    #bias
+    bias=bias+newY[i]-yobs
+    rmse=rmse+(newY[i]-yobs)^2
     # LPDS*
     lpdsstar=lpdsstar+dnorm(yobs, mut[i], st[i])
   }
-  
+  #MSE
+  bias=bias/N
+  rmse=rmse/N
+  rmse=sqrt(rmse)   
   # LPDS*
   lpdsstar=lpdsstar/N 
   lpdsstar=log(lpdsstar)
   
-  return(list(var=apply(var,1,mean), es=apply(es,1,mean), lpdsstar=lpdsstar))
+  return(list(var=apply(var,1,mean), 
+              es=apply(es,1,mean), 
+              lpdsstar=lpdsstar,
+              bias=bias, 
+              rmse=rmse))
 }
