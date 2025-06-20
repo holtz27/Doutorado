@@ -57,7 +57,7 @@ ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf){
         sigma = exp(parvect[6])
         
         #nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
-        alpha=0.1
+        #alpha=0.1
         nu=0.5*((nu.upper-nu.lower)*tanh(0.5*alpha*parvect[7])+(nu.upper+nu.lower))
         
         return(c(beta, mu, phi, sigma, nu))
