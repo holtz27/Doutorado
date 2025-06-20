@@ -14,7 +14,7 @@ quant = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   return(quants)
 }
 
-ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf, alpha){
+ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf){
   
   if(nu.lower==Inf){
     # svm-n
@@ -46,7 +46,7 @@ ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf, alpha){
         return(c(beta, mu, phi, sigma, nu))
       }
     }else{
-      p=function(parvect, nu.lower, nu.upper, alpha){
+      p=function(parvect, nu.lower, nu.upper){
         
         beta=array(0,dim=3)
         beta[1]= parvect[1]
@@ -57,7 +57,7 @@ ISdiag = function(Weigth, X, nu.lower=0, nu.upper=Inf, alpha){
         sigma = exp(parvect[6])
         
         #nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
-        #alpha=0.1
+        alpha=0.1
         nu=0.5*((nu.upper-nu.lower)*tanh(0.5*alpha*parvect[7])+(nu.upper+nu.lower))
         
         return(c(beta, mu, phi, sigma, nu))
