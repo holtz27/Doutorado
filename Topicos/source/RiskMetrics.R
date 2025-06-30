@@ -13,8 +13,7 @@ RiskMetrics=function(ht, at, theta, yobs, alpha=0.05){
   sa=theta[4,]
   v=theta[5,]
   
-  k=1e3
-  newy=numeric(k)
+  newy=numeric(N)
   newa=newW=newU=newh=delta=k1=k2=omega=gammat=mut=st=numeric(N)
   var=es=matrix(0,length(alpha), 1)
   qs=matrix(0,length(alpha), 1)
@@ -35,7 +34,7 @@ RiskMetrics=function(ht, at, theta, yobs, alpha=0.05){
     mut[i] = gammat[i] + omega[i]*delta[i]*newW[i]*exp(0.5*newh[i])/sqrt(newU[i])
     st[i] = omega[i]*sqrt(1-delta[i]^2)*exp(0.5*newh[i])/sqrt(newU[i])
     # y_T+1
-    newy[i]=mean(mut[i]+st[i]*rnorm(k)) 
+    newy[i]=mut[i]+st[i]*rnorm(1)
   }
   
   #MSE
