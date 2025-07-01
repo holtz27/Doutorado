@@ -1,4 +1,4 @@
-RiskMetrics=function(ht, at, theta, yobs, alpha=0.05){
+RiskMetrics=function(ht, at, theta){
   
   # model=c(sn, st, ss) 
   rtnorm=function(n){
@@ -15,9 +15,6 @@ RiskMetrics=function(ht, at, theta, yobs, alpha=0.05){
   
   newy=numeric(N)
   newa=newW=newU=newh=delta=k1=k2=omega=gammat=mut=st=numeric(N)
-  var=es=matrix(0,length(alpha), 1)
-  qs=matrix(0,length(alpha), 1)
-  lpdsstar=err=rmse=0
   
   for(i in 1:N){
     newh[i] = mu[i] + phi[i]*(ht[i]-mu[i]) + sh[i]*rnorm(1)
@@ -37,37 +34,7 @@ RiskMetrics=function(ht, at, theta, yobs, alpha=0.05){
     newy[i]=mut[i]+st[i]*rnorm(1)
   }
   
-  #MSE
-  err=mean(newy-yobs)
-  rmse=mean((newy-yobs)^2)   
-  # LPDS*
-  lpdsstar=mean(dnorm(yobs, mut, st))
-  lpdsstar=log(lpdsstar)
-  # VaR, ES
-  var[,1]=quantile(newy, probs=alpha)
-  # ES
-  for(j in 1:length(alpha)){
-    es[j,1]=mean(newy[which(newy<var[j,1])])  
-  }
-  # CRPS
-  crps=scoringRules::crps_sample(y=yobs, dat=newy)
-  # logS
-  logs=scoringRules::logs_sample(y=yobs, dat=newy)
-  # QS
-  qs[1,1]=scoringRules::qs_quantiles(y=yobs, 
-                                     x=quantile(newy, probs=alpha[1]), 
-                                     alpha=alpha[1])
-  qs[2,1]=scoringRules::qs_quantiles(y=yobs, 
-                                     x=quantile(newy, probs=alpha[2]), 
-                                     alpha=alpha[2])
-  
-  return(list(var=var,
-              es=es, 
-              lpdsstar=lpdsstar,
-              crps=crps,
-              logs=logs,
-              qs=qs,
-              err=err, 
-              rmse=rmse,
+  return(list(newa=newa,
+              newh=newh,
               newy=newy))
 }
