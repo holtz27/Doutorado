@@ -1,4 +1,4 @@
-// [[Rcpp::depends(RcppArmadillo, Rcpp)]]
+// [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
 
@@ -11,7 +11,6 @@ mat moms(vec a, vec h, double v, int N){
   
   double invsqrt_U = sqrt(0.5*v)*tgamma(0.5*(v-1))/tgamma(0.5*v);
   double W = sqrt(2/M_PI);
-  
   
   vec delta_t = a / sqrt(1 + pow(a, 2));
   double k1 = sqrt(0.5*v)*tgamma(0.5*(v-1))/tgamma(0.5*v);
@@ -70,35 +69,31 @@ List loglik_APF(vec y, vec theta, int N){
   for(int i=0; i < N; i++){
     X(i) = mu + phi*( hbar(indx(i)-1)-mu );
   }
-  //h_par.col(0) = mvnrnd(X, S);
   h_par.col(0) = X + sh * randn(N);
   
   for(int i=0; i < N; i++){
     X(i) = abar(indx(i)-1);
   }
-  //a_par.col(0) = mvnrnd(X, S);
-  a_par.col(0) = X + sa * randn(N);
+  a_par.col(0) = X+sa*randn(N);
   
   Ms = moms(a_par.col(0), h_par.col(0), v, N);
-  vec dens1 = normpdf(y(0), Ms.col(0), Ms.col(1));
+  vec dens1 = log_normpdf(y(0), Ms.col(0), Ms.col(1));
     
   Ms = moms(abar, hbar, v, N);
-  vec dens2 = normpdf(y(0), Ms.col(0), Ms.col(1));
+  vec dens2 = log_normpdf(y(0), Ms.col(0), Ms.col(1));
     
-  w.col(0) = dens1/dens2;
+  w.col(0) = exp(dens1-dens2);
   w.col(0) = w.col(0)/sum(w.col(0));
 
-  double loglik = log( sum( dens1 % w.col(0) ) );
+  double loglik = log( sum( exp(dens1) % w.col(0) ) );
   
   for(int t=1; t<T; t++){
     
     hbar = mu + phi*(h_par.col(t-1) - mu);
     abar = a_par.col(t-1);
     Ms = moms(abar, hbar, v, N);
-    
     pk = normpdf(y(t), Ms.col(0), Ms.col(1)) % w.col(t-1);
     pk /= sum(pk);
-    
     indx = sample(N, N, true, pk);
     indx = as<arma::uvec>(indx);
     
@@ -106,24 +101,21 @@ List loglik_APF(vec y, vec theta, int N){
     for(int i=0; i < N; i++){
       X(i) = mu + phi*( hbar(indx(i)-1)-mu );
     }
-    h_par.col(t) = X + sh * randn(N);
+    h_par.col(t) = X+sh*randn(N);
     
-
     for(int i=0; i < N; i++){
       X(i) = abar(indx(i)-1);
     }
-    a_par.col(t) = X + sa * randn(N);
+    a_par.col(t) = X+sa*randn(N);
     
     Ms = moms(a_par.col(t), h_par.col(t), v, N);
-    dens1 = normpdf(y(t), Ms.col(0), Ms.col(1));
-    
+    dens1 = log_normpdf(y(t), Ms.col(0), Ms.col(1));
     Ms = moms(abar, hbar, v, N);
-    dens2 = normpdf(y(t), Ms.col(0), Ms.col(1));
-    
-    w.col(t) = dens1/dens2;
+    dens2 = log_normpdf(y(t), Ms.col(0), Ms.col(1));
+    w.col(t) = exp(dens1-dens2);
     w.col(t) = w.col(t)/sum(w.col(t));
     
-    loglik += log( sum( dens1 % w.col(t) ) );
+    loglik += log( sum( exp(dens1) % w.col(t) ) );
     
   }
   
@@ -131,5 +123,4 @@ List loglik_APF(vec y, vec theta, int N){
                       Named("pred_h") = h_par,
                       Named("pred_a") = a_par,
                       Named("w") = w);
-  
 }

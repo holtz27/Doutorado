@@ -105,71 +105,39 @@ quant = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   
   return(quants)
 }
-################################################################################
-################################################################################
-
 Rcpp::sourceCpp('~/topicos/st/loglik_APF.cpp')
-
-
-
-
+################################################################################
+################################################################################
 
 
 theta=c(mu=mu, phi=phi_h, sh=s_h, sa=0.1, v=v)
 X=loglik_APF(y=y, theta=theta, N=1e4)
 X$loglik
 
-
+# Ess
 weigth=X$w
 plot(1/colSums( weigth^2 ))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Plots pred_a, pred_h
 a_hat=a_min=a_max=numeric(T)
 h_hat=h_min=h_max=numeric(T)
 for(t in 1:T){
   h_hat[t] = sum(X$pred_h[,t]*X$w[, t])
-  
-  a_min[t]=quant(X$pred_a[,t], weights=X$w[,t], probs=0.025)
-  a_hat[t]=sum(X$pred_a[,t]*X$w[,t])
-  a_max[t]=quant(X$pred_a[,t], weights=X$w[,t], probs=0.975)
-  
+  a_min[t] = quant(X$pred_a[,t], weights=X$w[,t], probs=0.025)
+  a_hat[t] = sum(X$pred_a[,t]*X$w[,t])
+  a_max[t] = quant(X$pred_a[,t], weights=X$w[,t], probs=0.975)
 }
 
-
+# Pred_h
 plot(h_hat, type='l', col='purple', lwd=1)
 lines(h, col='gray60', lwd=2)
 
-
-x=1:T
+# Pred_a
 plot(a, type='l', col='gray60', ylim=c(-1, 1), lwd=2)
 lines(a_hat, col='purple')
 lines(a_min, col='purple', lty=2)
 lines(a_max, col='purple', lty=2)
-
-polygon(c(x, rev(x)),               
+polygon(c(1:T, rev(1:T)),               
         c(a_max, rev(a_min)),       
         col = rgb(0.6, 0.2, 0.8, 0.2), 
         border = NA)                
