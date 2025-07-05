@@ -45,12 +45,10 @@ dic = function(data, mu_t, sigma_t){
                          mean = mu_hat,
                          sd   = sigma_hat,
                          log  = TRUE))
-  
   # 5. Penalização de complexidade efetiva
   p_D = D_bar - D_hat
-  
   # 6. Cálculo final do DIC
-  DIC = D_bar + p_D
+  dic = D_bar + p_D
   
-  return(list(DIC = DIC, D_bar = D_bar, D_hat = D_hat, p_D = p_D))
+  return(dic)
 }
