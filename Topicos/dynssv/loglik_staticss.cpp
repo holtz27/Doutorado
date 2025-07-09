@@ -1,9 +1,44 @@
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(RcppArmadillo, RcppGSL)]]
 
 #include <RcppArmadillo.h>
+#include <RcppGSL.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 using namespace Rcpp;
 using namespace arma;
+
+IntegerVector sample_int(int size, vec prob){
+  int n = prob.n_elem;
+  
+  if (n == 0 || size < 0) {
+    Rcpp::stop("Invalid size or empty probability vector");
+  }
+  
+  double sum_prob = arma::sum(prob);
+  if (sum_prob <= 0.0) {
+    Rcpp::stop("Sum of probabilities must be positive");
+  }
+  
+  // Inicializa o gerador de números aleatórios do GSL
+  gsl_rng* r = gsl_rng_alloc(gsl_rng_mt19937);
+  gsl_rng_set(r, time(NULL));  // semente (pode substituir por valor fixo para reprodutibilidade)
+  
+  // Cria a estrutura de aliasing da GSL
+  gsl_ran_discrete_t* g = gsl_ran_discrete_preproc(n, prob.memptr());
+  
+  // Gera as amostras
+  Rcpp::IntegerVector result(size);
+  for (int i = 0; i < size; ++i) {
+    result[i] = gsl_ran_discrete(r, g); 
+  }
+  
+  // Libera memória
+  gsl_ran_discrete_free(g);
+  gsl_rng_free(r);
+  
+  return result;
+}
 
 mat moms(double a, vec h, double v, int N){
   
@@ -31,7 +66,7 @@ mat moms(double a, vec h, double v, int N){
 // [[Rcpp::export]]
 List loglik_staticss(vec y, vec theta, int N){
   
-  Function sample("sample.int");
+  //Function sample("sample.int");
   
   int T = y.n_elem;
   double mu = theta[0];
@@ -52,16 +87,15 @@ List loglik_staticss(vec y, vec theta, int N){
   mat Ms = moms(a1, hbar, v, N);
   
   pk = log_normpdf(y(0), Ms.col(0), Ms.col(1)) + log(w0);
-  double max_pk = pk.max();
-  vec prob = exp(pk - max_pk);
+  vec prob = exp(pk);
   prob = prob / sum(prob);
-  IntegerVector indx = sample(N, N, true, prob);
+  IntegerVector indx = sample_int(N, prob);
   indx = as<arma::uvec>(indx);
   
   //new states
   vec X(N);
   for(int i=0; i < N; i++){
-    X(i) = mu + phi*( hbar(indx(i)-1)-mu );
+    X(i) = mu + phi*( hbar(indx(i))-mu );
   }
   //X = mu + phi*( hbar.elem(indx-1)  -mu );
   h_par.col(0) = X + sh * randn(N);
@@ -87,15 +121,14 @@ List loglik_staticss(vec y, vec theta, int N){
     hbar = mu + phi*(h_par.col(t-1) - mu);
     Ms = moms(a1, hbar, v, N);
     pk = log_normpdf(y(t), Ms.col(0), Ms.col(1)) + log(w.col(t-1));
-    max_pk = pk.max();
-    prob = exp(pk - max_pk);
+    prob = exp(pk);
     prob = prob / sum(prob);
-    indx = sample(N, N, true, prob);
+    indx = sample_int(N, prob);
     indx = as<arma::uvec>(indx);
     
     //new states
     for(int i=0; i < N; i++){
-      X(i) = mu + phi*( hbar(indx(i)-1)-mu );
+      X(i) = mu + phi*( hbar(indx(i))-mu );
     }
     h_par.col(t) = X+sh*randn(N);
     
@@ -113,10 +146,10 @@ List loglik_staticss(vec y, vec theta, int N){
     }
     
     // Resample 
-    indx= sample(N, N, true, w.col(t));
+    indx= sample_int(N, w.col(t));
     indx = as<arma::uvec>(indx);
     for(int i=0; i < N; i++){
-      h_par(i, t) = h_par(indx(i)-1, t);
+      h_par(i, t) = h_par(indx(i), t);
     }
     // Reset pesos
     w.col(t).fill(1.0 / N);
