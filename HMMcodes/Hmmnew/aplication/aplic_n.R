@@ -14,10 +14,10 @@ RcppParallel::setThreadOptions(numThreads=num_cores-1)
 ################################################################################
 svm.pn2pw <- function(beta,mu,phi,sigma){
   lbeta1<- beta[1]
-  lbeta2<-log((1+beta[2])/(1-beta[2]))
+  lbeta2<-atanh(beta[2]) #log((1+beta[2])/(1-beta[2]))
   lbeta3<-beta[3]
   lmu<-mu
-  lphi <- log((1+phi)/(1-phi))
+  lphi <- atanh(phi) #log((1+phi)/(1-phi))
   lsigma <- log(sigma)
   parvect <- c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma)
   return(parvect)
@@ -25,10 +25,10 @@ svm.pn2pw <- function(beta,mu,phi,sigma){
 svm.pw2pn <- function(parvect){
   beta=array(0,dim=3)
   beta[1]= parvect[1]
-  beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
+  beta[2]= tanh(parvect[2]) #(exp(parvect[2])-1)/(exp(parvect[2])+1)
   beta[3]=parvect[3]
   mu=parvect[4]
-  phi = (exp(parvect[5])-1)/(exp(parvect[5])+1)
+  phi = tanh(parvect[5]) #(exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma = exp(parvect[6])
   return(c(beta, mu, phi, sigma))
 }
@@ -70,12 +70,32 @@ svmn.mllk <-function(parvect,y,y0,m,gmax){
   return(-lscale)
 }
 svmn.prior <-function(parvect){
-  lprior = log(dnorm(parvect[1], 0, 10))
-  + log(dnorm(parvect[2], 0.5, 10))
-  + log(dnorm(parvect[3], 0, 10))
-  + log(dnorm(parvect[4], 0, 10))
-  + log(dnorm(parvect[5], 4.5, 10))
-  + log(dnorm(parvect[6], -1.5, 10)) 
+  
+  # b0
+  lprior = dnorm(parvect[1], 0, sqrt(10), log=TRUE )
+  # b1
+  x=0.5*(tanh(parvect[2])+1)
+  j=abs(0.5/cosh(parvect[2])^2)
+  lprior=lprior+dbeta(x, shape1=5, shape2=1.5, log=TRUE)+log(j)
+  # b2
+  lprior=lprior+dnorm(parvect[3], 0, sqrt(10), log=TRUE)
+  # mu
+  lprior=lprior+dnorm(parvect[4], 0, sqrt(10), log=TRUE)
+  # phi
+  x=0.5*(tanh(parvect[5])+1)
+  j=abs(0.5/cosh(parvect[5])^2)
+  lprior=lprior+dbeta(x, shape1=20, shape2=1.5, log=TRUE)+log(j)
+  # sigma
+  x=exp(2*parvect[6])
+  j=2*x
+  lprior=lprior+invgamma::dinvgamma(x, shape=2.5, rate=0.025, log=TRUE)+log(j)
+  
+  #+ log(dnorm(parvect[2], 0.5, 10))
+  #+ log(dnorm(parvect[3], 0, 10))
+  #+ log(dnorm(parvect[4], 0, 10))
+  #+ log(dnorm(parvect[5], 4.5, 10))
+  #+ log(dnorm(parvect[6], -1.5, 10)) 
+  #+ log(dnorm(parvect[7], -10, 10))
   return(-lprior)  
 }
 svmn.posterior <-function(parvect,y,y0,m,gmax){

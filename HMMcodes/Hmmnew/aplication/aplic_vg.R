@@ -31,13 +31,13 @@ svmvg.sim=function(mu,phi,sigma,nu,beta,y0,g_dim){
   
   return (list(y=y,h=h,l=l))
 }
-svm.pn2pw <- function(beta, mu, phi, sigma, nu){
-  lbeta1<- beta[1]
-  lbeta2<-log((1+beta[2])/(1-beta[2]))
-  lbeta3<-beta[3]
-  lmu<-mu
-  lphi <- log((1+phi)/(1-phi))
-  lsigma <- log(sigma)
+svm.pn2pw = function(beta, mu, phi, sigma, nu){
+  lbeta1 = beta[1]
+  lbeta2 =  atanh(beta[2]) #log((1+beta[2])/(1-beta[2]))
+  lbeta3 = beta[3]
+  lmu = mu
+  lphi = atanh(phi) #log((1+phi)/(1-phi))
+  lsigma = log(sigma)
   # 2<nu<40
   #lnu = log(nu-2)-log(40-nu)
   alpha=0.1
@@ -48,10 +48,10 @@ svm.pn2pw <- function(beta, mu, phi, sigma, nu){
 svm.pw2pn <- function(parvect){
   beta=array(0,dim=3)
   beta[1]= parvect[1]
-  beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
+  beta[2]=tanh(parvect[2]) #(exp(parvect[2])-1)/(exp(parvect[2])+1)
   beta[3]=parvect[3]
   mu=parvect[4]
-  phi=(exp(parvect[5])-1)/(exp(parvect[5])+1)
+  phi=tanh(parvect[5]) #(exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma=exp(parvect[6])
   #nu = exp(parvect[7]) + 2
   #nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
@@ -97,14 +97,37 @@ svmvg.mllk=function(parvect, y, y0, m, gmax){
   lscale = mlogLk_Rcpp(allprobs,Gamma,foo,ny) #Rcpp function
   return(-lscale)
 }
-svmvg.prior=function(parvect){
-  lprior = log(dnorm(parvect[1], 0, 10))
-  + log(dnorm(parvect[2], 0.5, 10))
-  + log(dnorm(parvect[3], 0, 10))
-  + log(dnorm(parvect[4], 0, 10))
-  + log(dnorm(parvect[5], 4.5, 10))
-  + log(dnorm(parvect[6], -1.5, 10)) 
-  + log(dnorm(parvect[7], -10, 10))
+svmvg.prior = function(parvect){
+  
+  # b0
+  lprior = log(dnorm(parvect[1], 0, sqrt(10) ))
+  # b1
+  x=0.5*(tanh(parvect[2])+1)
+  j=abs(0.5/cosh(parvect[2])^2)
+  lprior=lprior+dbeta(x, shape1=5, shape2=1.5, log=TRUE)+log(j)
+  # b2
+  lprior=lprior+log(dnorm(parvect[3], 0, sqrt(10) ))
+  # mu
+  lprior=lprior+log(dnorm(parvect[4], 0, sqrt(10)))
+  # phi
+  x=0.5*(tanh(parvect[5])+1)
+  j=abs(0.5/cosh(parvect[5])^2)
+  lprior=lprior+dbeta(x, shape1=20, shape2=1.5, log=TRUE)+log(j)
+  # sigma
+  x=exp(2*parvect[6])
+  j=2*x
+  lprior=lprior+invgamma::dinvgamma(x, shape=2.5, rate=0.025, log=TRUE)+log(j)
+  # nu
+  lprior=lprior+log(dnorm(parvect[7], -10, 10 ))
+  
+  
+  #+ log(dnorm(parvect[2], 0.5, 10))
+  #+ log(dnorm(parvect[3], 0, 10))
+  #+ log(dnorm(parvect[4], 0, 10))
+  #+ log(dnorm(parvect[5], 4.5, 10))
+  #+ log(dnorm(parvect[6], -1.5, 10)) 
+  #+ log(dnorm(parvect[7], -10, 10))
+  
   return(-lprior)  
 }
 svmvg.posterior=function(parvect, y, y0, m, gmax){

@@ -100,25 +100,25 @@ svmt.mllk <-function(parvect,y,y0,m,gmax){
 svmt.prior = function(parvect){
   
   # b0
-  lprior = log(dnorm(parvect[1], 0, sqrt(10) ))
+  lprior = dnorm(parvect[1], 0, sqrt(10), log=TRUE )
   # b1
   x=0.5*(tanh(parvect[2])+1)
   j=abs(0.5/cosh(parvect[2])^2)
   lprior=lprior+dbeta(x, shape1=5, shape2=1.5, log=TRUE)+log(j)
   # b2
-  lprior=lprior+log(dnorm(parvect[3], 0, sqrt(10) ))
+  lprior=lprior+dnorm(parvect[3], 0, sqrt(10), log=TRUE)
   # mu
-  lprior=lprior+log(dnorm(parvect[4], 0, sqrt(10)))
+  lprior=lprior+dnorm(parvect[4], 0, sqrt(10), log=TRUE)
   # phi
   x=0.5*(tanh(parvect[5])+1)
   j=abs(0.5/cosh(parvect[5])^2)
-  lprior=lprior+dbeta(x, shape1=5, shape2=1.5, log=TRUE)+log(j)
+  lprior=lprior+dbeta(x, shape1=20, shape2=1.5, log=TRUE)+log(j)
   # sigma
   x=exp(2*parvect[6])
   j=2*x
   lprior=lprior+invgamma::dinvgamma(x, shape=2.5, rate=0.025, log=TRUE)+log(j)
   # nu
-  lprior=lprior+log(dnorm(parvect[7], -10, sqrt(10) ))
+  lprior=lprior+dnorm(parvect[7], -10, 10, log=TRUE)
   
   
   #+ log(dnorm(parvect[2], 0.5, 10))

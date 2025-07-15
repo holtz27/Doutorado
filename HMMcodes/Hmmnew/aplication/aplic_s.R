@@ -31,12 +31,12 @@ svms.sim <-function(mu,phi,sigma,nu,beta,y0,g_dim){
   return (list(y=y,h=h,l=l))
 }
 svm.pn2pw <- function(beta, mu, phi, sigma, nu){
-  lbeta1<- beta[1]
-  lbeta2<-log((1+beta[2])/(1-beta[2]))
-  lbeta3<-beta[3]
-  lmu<-mu
-  lphi <- log((1+phi)/(1-phi))
-  lsigma <- log(sigma)
+  lbeta1 = beta[1]
+  lbeta2 =  atanh(beta[2]) #log((1+beta[2])/(1-beta[2]))
+  lbeta3 = beta[3]
+  lmu = mu
+  lphi = atanh(phi) #log((1+phi)/(1-phi))
+  lsigma = log(sigma)
   lnu=log(nu)
   parvect = c(lbeta1,lbeta2,lbeta3,lmu,lphi,lsigma,lnu)
   return(parvect)
@@ -44,14 +44,11 @@ svm.pn2pw <- function(beta, mu, phi, sigma, nu){
 svm.pw2pn <- function(parvect){
   beta=array(0,dim=3)
   beta[1]= parvect[1]
-  beta[2]=(exp(parvect[2])-1)/(exp(parvect[2])+1)
+  beta[2]=tanh(parvect[2]) #(exp(parvect[2])-1)/(exp(parvect[2])+1)
   beta[3]=parvect[3]
   mu=parvect[4]
-  phi=(exp(parvect[5])-1)/(exp(parvect[5])+1)
+  phi=tanh(parvect[5]) #(exp(parvect[5])-1)/(exp(parvect[5])+1)
   sigma=exp(parvect[6])
-  #nu = exp(parvect[7]) + 2
-  #nu = (40*exp(parvect[7])+2)/(1+exp(parvect[7]))
-  
   nu=exp(parvect[7])
   #return(list(beta=beta,mu=mu,phi=phi,sigma=sigma,nu=nu))
   return(c(beta, mu, phi, sigma, nu))
@@ -94,13 +91,35 @@ svms.mllk <-function(parvect,y,y0,m,gmax){
   return(-lscale)
 }
 svms.prior <-function(parvect){
-  lprior = log(dnorm(parvect[1], 0, 10))
-  + log(dnorm(parvect[2], 0.5, 10))
-  + log(dnorm(parvect[3], 0, 10))
-  + log(dnorm(parvect[4], 0, 10))
-  + log(dnorm(parvect[5], 4.5, 10))
-  + log(dnorm(parvect[6], -1.5, 10)) 
-  + log(dnorm(parvect[7], 0, 10))
+  # b0
+  lprior = dnorm(parvect[1], 0, sqrt(10), log=TRUE )
+  # b1
+  x=0.5*(tanh(parvect[2])+1)
+  j=abs(0.5/cosh(parvect[2])^2)
+  lprior=lprior+dbeta(x, shape1=5, shape2=1.5, log=TRUE)+log(j)
+  # b2
+  lprior=lprior+dnorm(parvect[3], 0, sqrt(10), log=TRUE)
+  # mu
+  lprior=lprior+dnorm(parvect[4], 0, sqrt(10), log=TRUE)
+  # phi
+  x=0.5*(tanh(parvect[5])+1)
+  j=abs(0.5/cosh(parvect[5])^2)
+  lprior=lprior+dbeta(x, shape1=20, shape2=1.5, log=TRUE)+log(j)
+  # sigma
+  x=exp(2*parvect[6])
+  j=2*x
+  lprior=lprior+invgamma::dinvgamma(x, shape=2.5, rate=0.025, log=TRUE)+log(j)
+  # nu
+  v=exp(parvect[7])
+  j=abs(v)
+  lprior=lprior+dgamma(v, shape=0.08, rate=0.04) + log(j)
+  
+  #+ log(dnorm(parvect[2], 0.5, 10))
+  #+ log(dnorm(parvect[3], 0, 10))
+  #+ log(dnorm(parvect[4], 0, 10))
+  #+ log(dnorm(parvect[5], 4.5, 10))
+  #+ log(dnorm(parvect[6], -1.5, 10)) 
+  #+ log(dnorm(parvect[7], -10, 10))
   return(-lprior)  
 }
 svms.posterior <-function(parvect,y,y0,m,gmax){
