@@ -2,7 +2,7 @@
 sp500 = quantmod::getSymbols('^GSPC', 
                            src = 'yahoo', 
                            #from='2002-01-01', to='2025-01-01',
-                           from='2002-01-01', to='2021-01-07',
+                           from='2002-01-01', to='2022-04-06',
                            auto.assign = FALSE)
 sp500 = na.omit( sp500 )
 sp500 = data.frame( sp500 )
@@ -43,7 +43,7 @@ round(data_summary, digits=3)
 sp500 = quantmod::getSymbols('^GSPC', 
                              src = 'yahoo', 
                              #from='2002-01-01', to='2025-01-01',
-                             from='2021-01-08', to='2025-01-01',
+                             from='2022-04-06', to='2025-01-01',
                              auto.assign = FALSE)
 sp500 = na.omit( sp500 )
 sp500 = data.frame( sp500 )
