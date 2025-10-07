@@ -14,7 +14,7 @@ quant = function(x, weights, probs=c(0.025, 0.5, 0.975)){
   return(quants)
 }
 
-ISdiag = function(Weigth, X, normal=FALSE){
+ISdiag = function(Weigth, X, normal=FALSE, svm=TRUE){
   
   p=get('svm.pw2pn', envir=.GlobalEnv)
   
@@ -31,12 +31,22 @@ ISdiag = function(Weigth, X, normal=FALSE){
   Quants = t(apply(Thetas, 2, quant, Weigth))
   Results = cbind(theta_hat, Vars_hat, Quants)
   colnames(Results) = c('mean', 'var', '2.5%', '50%', '97.5%')
+  
   if(normal){
-    row.names(Results) = c('b0','b1','b2','mu','phi','sigma')
+    if(svm){
+      row.names(Results) = c('b0','b1','b2','mu','phi','sigma')
+    }else{
+      row.names(Results) = c('mu','phi','sigma')
+    }
   }else{
-    row.names(Results) = c('b0','b1','b2','mu','phi','sigma','nu')
+    if(svm){
+      row.names(Results) = c('b0','b1','b2','mu','phi','sigma','nu')
+    }else{
+      row.names(Results) = c('mu','phi','sigma','nu')
+    }
+    
   }
   Results = round(Results, 4)#signif(Results, 3)
   
-  return(list(Results=Results, ess = diagis::ess(Weigth)))
+  return(list(Results=Results, ess=diagis::ess(Weigth)))
 }
