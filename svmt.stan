@@ -12,12 +12,12 @@ parameters{
   real<lower=0> s_h;             
   vector[T] h_std;
   vector<lower=0>[T] l;
-  real<lower=2, upper=40> v;
+  real vT;
 }
 transformed parameters{
  real<lower=0,upper=1> b1T=0.5*(b1+1);
  real<lower=0,upper=1> phiT=0.5*(phi+1);
- real vT=20*atanh((v-21)/19);
+ real<lower=2, upper=40> v = 19 * tanh(0.05 * vT) + 21;
  real<lower=0> s_hT=pow(s_h,2);
  
  vector[T] mu_t;
